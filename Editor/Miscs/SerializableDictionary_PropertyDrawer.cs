@@ -9,8 +9,7 @@ using System;
 using System.Reflection;
 
 namespace RealityProgrammer.UnityToolkit.Editors.Miscs {
-    // [CustomPropertyDrawer(typeof(SerializableDictionary<,>))]
-    [CustomPropertyDrawer(typeof(SerializableDictionaryV2<,>))]
+    [CustomPropertyDrawer(typeof(SerializableDictionary<,>))]
     public class SerializableDictionary_PropertyDrawer : PropertyDrawer {
         private readonly Dictionary<string, bool> validate = new Dictionary<string, bool>();
 
