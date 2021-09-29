@@ -8,7 +8,7 @@ A collection of scripts, editor scripts, utilities to improve Unity workflow and
 # Installation
 You can install this by using one of the two following ways:
 
-1. Installation via git URL:  
+1. Installation via Package Manager and git URL:  
   1.1. Obtains the installation URL via HTTP  
   1.2. Use Unity's Package Manager  
   1.3. Find add button (usually with the plus sign) -> Add package from git URL... -> paste installation URL  
