@@ -16,15 +16,15 @@ namespace RealityProgrammer.UnityToolkit.Editors.Utility {
             };
 
             variable.normal.textColor = RPEditorUIUtility.GetDefaultTextColor();
-            variable.normal.background = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Editor/Resources/SDCP_NormalBgHeader_Dark.png");
+            variable.normal.background = Resources.Load<Texture2D>("Dark/SDCP_NormalBgHeader");
             _storage.Add("SerializableDictionary.ControlPanel.BackgroundHeader.Dark", variable);
 
             variable = new GUIStyle(_storage["SerializableDictionary.ControlPanel.BackgroundHeader.Dark"]);
             variable.padding.top = 4;
             variable.padding.bottom = 4;
-            variable.hover.background = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Editor/Resources/SDCP_HoverBgHeader_Dark.png");
+            variable.hover.background = Resources.Load<Texture2D>("Dark/SDCP_HoverBgHeader");
             variable.hover.textColor = RPEditorUIUtility.GetDefaultTextColor();
-            variable.active.background = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Editor/Resources/SDCP_HoldBgHeader_Dark.png");
+            variable.active.background = Resources.Load<Texture2D>("Dark/SDCP_HoldBgHeader");
             variable.active.textColor = RPEditorUIUtility.GetDefaultTextColor();
             variable.fontStyle = FontStyle.Bold;
 
@@ -34,7 +34,7 @@ namespace RealityProgrammer.UnityToolkit.Editors.Utility {
                 border = new RectOffset(1, 1, 0, 1),
             };
             variable.normal.textColor = RPEditorUIUtility.GetDefaultTextColor();
-            variable.normal.background = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Editor/Resources/SDCP_NormalBgBottom_Dark.png");
+            variable.normal.background = Resources.Load<Texture2D>("Dark/SDCP_NormalBgBottom");
 
             _storage.Add("SerializableDictionary.ControlPanel.BackgroundBottom.Dark", variable);
 
@@ -42,7 +42,7 @@ namespace RealityProgrammer.UnityToolkit.Editors.Utility {
                 border = new RectOffset(4, 4, 0, 4),
             };
             variable.normal.textColor = RPEditorUIUtility.GetDefaultTextColor();
-            variable.normal.background = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Editor/Resources/SDPD_NormalBg_Dark.png");
+            variable.normal.background = Resources.Load<Texture2D>("Dark/SDPD_NormalBg");
 
             _storage.Add("SerializableDictionary.PairDisplayer.NormalBackground.Dark", variable);
 
@@ -52,8 +52,8 @@ namespace RealityProgrammer.UnityToolkit.Editors.Utility {
                 fixedHeight = 10,
             };
 
-            variable.normal.background = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Editor/Resources/Searchbar_NormalCancelButton_Dark.png");
-            variable.hover.background = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Editor/Resources/Searchbar_HoverCancelButton_Dark.png");
+            variable.normal.background = Resources.Load<Texture2D>("Dark/Searchbar_NormalCancelButton");
+            variable.hover.background = Resources.Load<Texture2D>("Dark/Searchbar_HoverCancelButton");
 
             _storage.Add("SerializableDictionary.ControlPanel.Searchbar.CancelButton.Dark", variable);
         }
