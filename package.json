@@ -1,0 +1,16 @@
+{
+  "name": "com.RealityProgrammer.RPUnityToolkit",
+  "version": "1.0.0",
+  "displayName": "RPUnity Toolkit",
+  "description": "A collection of Unity scripts, editor scripts, components, utilities to increase workflow speed.",
+  "unity": "2019.3",
+  "licensesUrl": "https://creativecommons.org/licenses/by/4.0/",
+  "keywords": [
+	"RPUnityToolkit",
+    "Toolkit",
+    "RealityProgrammer"
+  ],
+  "author": {
+    "name": "RealityProgrammer",
+  }
+}

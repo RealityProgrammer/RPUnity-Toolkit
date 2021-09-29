@@ -1,0 +1,18 @@
+{
+    "name": "RealityProgrammer.RPUnityToolkit.Editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:21bd29ce2c7befa4c853fa3071c176ac"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "!RP_UNITYTOOLKIT_EDITOR"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,16 @@
+{
+    "name": "RealityProgrammer.RPUnityToolkit",
+    "rootNamespace": "",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "!RP_UNITYTOOLKIT_RUNTIME"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
