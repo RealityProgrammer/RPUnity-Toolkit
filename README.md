@@ -15,3 +15,7 @@ You can install this by using one of the two following ways:
   1.4. Click "Add"  
   
 2. Download or Clone the repository into project Assets folder
+
+# Drawbacks
+1. No Light mode support (yet?)  
+2. Some feature might not be stable and might have some bugs. If something odd occured, open an issue,  
