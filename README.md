@@ -2,7 +2,7 @@
 A collection of scripts, editor scripts, utilities to improve Unity workflow and somewhat patch Unity's mistakes. Feel free to modify contents for your usage.
 
 # Requirements
-1. Unity Editor version: 2020.3.1f16.
+1. Unity Editor version (at least): 2020.3.1f16.
 2. API compatibility version: .NET 4.0 (Project Settings -> Player -> Configuration -> API compatibility version -> Set to .NET 4.0). This might not be required in the far future, and there might be alternate to currently using API (RuntimeBinder, etc...).
 
 # Installation
