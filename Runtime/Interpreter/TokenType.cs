@@ -20,7 +20,7 @@ namespace RealityProgrammer.CSStandard.Interpreter {
 
         This,
 
-        EOP,
+        EOF,
 
         // Exclusive Keywords
         Iterator, IteratorIndex,

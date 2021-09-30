@@ -1,51 +1,20 @@
-﻿using System;
+using System.Collections;
 using System.Linq;
-using System.Reflection;
 using System.Collections.Generic;
+using RealityProgrammer.CSStandard.Interpreter.Exceptions;
 using RealityProgrammer.CSStandard.Interpreter.Expressions;
 using RealityProgrammer.CSStandard.Utilities;
-using RealityProgrammer.CSStandard.Interpreter.Exceptions;
+using System;
+using UnityEngine;
 
 namespace RealityProgrammer.CSStandard.Interpreter {
-    public class ConditionalSearchInterpreter {
-        public class ExclusiveIdentifierExpression : BaseExpression {
-            public LexerToken Name { get; protected set; }
-
-            public ExclusiveIdentifierExpression(LexerToken name) {
-                Name = name;
-            }
-
-            public override string ToString() {
-                return "ExclusiveIdentifierExpression(" + Name + ")";
-            }
-
-            public override object Evaluate(IInterpreter interpreter) {
-                if (interpreter is Interpreter excIntr) {
-                    switch (Name.Type) {
-                        case TokenType.Iterator:
-                            return excIntr.IteratingTarget;
-
-                        case TokenType.IteratorIndex:
-                            return excIntr.IteratingIndex;
-
-                        case TokenType.This:
-                            return excIntr.NativeObject;
-                    }
-                }
-
-                throw new ArgumentException("ExclusiveIdentifierExpression can only be evaluated by " + typeof(Interpreter).FullName);
-            }
-        }
-        public class Scanner {
+    public class EquationCalculateInterpreter {
+        private class Scanner {
             private static readonly Dictionary<string, TokenType> _keywords = new Dictionary<string, TokenType>() {
                 { "true", TokenType.True },
                 { "false", TokenType.False },
-                { "null", TokenType.Null },
                 { "and", TokenType.And },
                 { "or", TokenType.Or },
-                { "__iterator__", TokenType.Iterator },
-                { "__iteratorIndex__", TokenType.IteratorIndex },
-                { "__this__", TokenType.This },
             };
 
             private int start = 0;
@@ -87,42 +56,49 @@ namespace RealityProgrammer.CSStandard.Interpreter {
 
                     case '!': AddToken(Match('=') ? TokenType.BangEqual : TokenType.Bang); break;
                     case '=': AddToken(Match('=') ? TokenType.EqualEqual : TokenType.Equal); break;
-                    case '<': AddToken(Match('=') ? TokenType.LessEqual : TokenType.Less); break;
-                    case '>': AddToken(Match('=') ? TokenType.GreaterEqual : TokenType.Greater); break;
+                    case '<':
+                        if (Match('=')) {
+                            AddToken(TokenType.LessEqual);
+                        } else if (Match('<')) {
+                            AddToken(TokenType.BitwiseLeftShift);
+                        } else {
+                            AddToken(TokenType.Less);
+                        }
+                        break;
+                    case '>':
+                        if (Match('=')) {
+                            AddToken(TokenType.GreaterEqual);
+                        } else if (Match('>')) {
+                            AddToken(TokenType.BitwiseRightShift);
+                        } else {
+                            AddToken(TokenType.Greater);
+                        }
+                        break;
 
                     case '&':
                         if (Match('&')) {
                             AddToken(TokenType.And);
-                            break;
+                        } else {
+                            AddToken(TokenType.BitwiseAnd);
                         }
-                        ThrowUnexpectedCharacter('&');
                         break;
 
                     case '|':
                         if (Match('|')) {
                             AddToken(TokenType.Or);
-                            break;
+                        } else {
+                            AddToken(TokenType.BitwiseOr);
                         }
-                        throw new ArgumentException($"Unexpected character '{c}' (Character code: {(short)c}) at position {position - 1}");
+                        break;
+
+                    case '^':
+                        AddToken(TokenType.BitwiseXor);
+                        break;
 
                     case ' ':
                     case '\n':
                     case '\r':
                     case '\t':
-                        break;
-
-                    case '"':
-                        while (Peek() != '"' && !IsEnd()) {
-                            Advance();
-                        }
-
-                        if (IsEnd()) {
-                            throw new UnterminatedStringException($"Unterminated string at position " + start + " to " + (position - 1) + ".");
-                        }
-
-                        Advance();
-                        AddToken(TokenType.String, SourceProgram.Substring(start + 1, position - start - 2));
-
                         break;
 
                     default:
@@ -269,12 +245,6 @@ namespace RealityProgrammer.CSStandard.Interpreter {
                 return SourceProgram[position];
             }
 
-            private char PeekNext() {
-                if (position + 1 >= SourceProgram.Length) return '\0';
-
-                return SourceProgram[position + 1];
-            }
-
             private bool IsAlpha(char c) {
                 return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
             }
@@ -295,12 +265,12 @@ namespace RealityProgrammer.CSStandard.Interpreter {
                 TokenContainer.Add(new LexerToken(type, literal, SourceProgram.Substring(start, position - start)));
             }
         }
-        public class Lexer {
-            private readonly List<LexerToken> input;
+        private class Lexer {
+            private List<LexerToken> input;
 
             private int current = 0;
 
-            public Lexer(List<LexerToken> input) {
+            public void FeedTokens(List<LexerToken> input) {
                 this.input = input;
             }
 
@@ -311,27 +281,57 @@ namespace RealityProgrammer.CSStandard.Interpreter {
             }
 
             private BaseExpression Expression() {
-                return Or();
+                return ConditionalOr();
             }
 
-            private BaseExpression Or() {
-                var expression = And();
+            private BaseExpression ConditionalOr() {
+                var expr = ConditionalAnd();
 
                 while (Match(TokenType.Or)) {
-                    expression = new LogicalExpression(expression, Previous(), And());
+                    expr = new BinaryExpression(expr, Previous(), ConditionalAnd());
                 }
 
-                return expression;
+                return expr;
             }
 
-            private BaseExpression And() {
-                var expression = Equality();
+            private BaseExpression ConditionalAnd() {
+                var expr = BitwiseOr();
 
                 while (Match(TokenType.And)) {
-                    expression = new LogicalExpression(expression, Previous(), Equality());
+                    expr = new BinaryExpression(expr, Previous(), BitwiseOr());
                 }
 
-                return expression;
+                return expr;
+            }
+
+            private BaseExpression BitwiseOr() {
+                var expr = BitwiseXor();
+
+                while (Match(TokenType.BitwiseOr)) {
+                    expr = new BinaryExpression(expr, Previous(), BitwiseXor());
+                }
+
+                return expr;
+            }
+
+            private BaseExpression BitwiseXor() {
+                var expr = BitwiseAnd();
+
+                while (Match(TokenType.BitwiseXor)) {
+                    expr = new BinaryExpression(expr, Previous(), BitwiseAnd());
+                }
+
+                return expr;
+            }
+
+            private BaseExpression BitwiseAnd() {
+                var expr = Equality();
+
+                while (Match(TokenType.BitwiseAnd)) {
+                    expr = new BinaryExpression(expr, Previous(), Equality());
+                }
+
+                return expr;
             }
 
             private BaseExpression Equality() {
@@ -390,26 +390,7 @@ namespace RealityProgrammer.CSStandard.Interpreter {
                         var previous = Previous();
                         Advance();
 
-                        expr = HandleCallExpression(expr, previous);
-                    } else if (Match(TokenType.Dot)) {
-                        LexerToken name;
-
-                        if (Check(TokenType.Identifier)) {
-                            name = Advance();
-                        } else {
-                            throw new Exception("Expected identifier after member access '.'");
-                        }
-
-                        if (Check(TokenType.LeftParenthesis)) {
-                            var previous = Previous();
-                            Advance();
-
-                            List<BaseExpression> parameters = CollectParameterExpressions();
-                            expr = new TargetFunctionCallExpression(expr, new IdentifierExpression(previous), parameters);
-                            Advance();
-                        } else {
-                            expr = new GetExpression(expr, new IdentifierExpression(name));
-                        }
+                        expr = HandleCallExpression(previous);
                     } else {
                         break;
                     }
@@ -418,10 +399,10 @@ namespace RealityProgrammer.CSStandard.Interpreter {
                 return expr;
             }
 
-            private TargetFunctionCallExpression HandleCallExpression(BaseExpression expr, LexerToken name) {
+            private FunctionCallExpression HandleCallExpression(LexerToken name) {
                 List<BaseExpression> parameters = CollectParameterExpressions();
 
-                return new TargetFunctionCallExpression(expr, new IdentifierExpression(name), parameters);
+                return new FunctionCallExpression(new IdentifierExpression(name), parameters);
             }
 
             private List<BaseExpression> CollectParameterExpressions() {
@@ -433,23 +414,25 @@ namespace RealityProgrammer.CSStandard.Interpreter {
                     } while (Match(TokenType.Comma));
                 }
 
+                if (Check(TokenType.RightParenthesis)) {
+                    Advance();
+                } else {
+                    throw new UnclosedParenthesesException("Expected close parenthesis ')' after arguments");
+                }
+
                 return parameters;
             }
 
             private BaseExpression Primary() {
-                if (Match(TokenType.True)) return new LiteralExpression(true);
-                if (Match(TokenType.False)) return new LiteralExpression(false);
-                if (Match(TokenType.Null)) return new LiteralExpression(null);
+                if (Match(TokenType.True)) return new LiteralExpression(1);
+                if (Match(TokenType.False)) return new LiteralExpression(0);
 
-                if (Match(TokenType.Number, TokenType.String)) {
+                if (Match(TokenType.Number)) {
                     return new LiteralExpression(Previous().Literal);
                 }
 
-                if (Match(TokenType.Iterator) || Match(TokenType.IteratorIndex) || Match(TokenType.This)) {
-                    return new ExclusiveIdentifierExpression(Previous());
-                }
                 if (Match(TokenType.Identifier)) {
-                    return new IdentifierExpression(Previous());
+                    return new VariableRetrieveExpression(Previous());
                 }
 
                 if (Match(TokenType.LeftParenthesis)) {
@@ -499,77 +482,64 @@ namespace RealityProgrammer.CSStandard.Interpreter {
                 return input[current - 1];
             }
         }
-        public class Interpreter : IInterpreter {
+        private class Interpreter : IInterpreter {
             public BaseExpression Expression { get; protected set; }
-            public object NativeObject { get; protected set; }
 
-            [Obsolete("This specific interpreter is not capable of holding variable", true)]
-            public Dictionary<string, object> VariableDictionary {
-                get => throw new NotImplementedException("ConditionalSearchInterpreter: The Interpreter is not capable of holding variables");
-                set => throw new NotImplementedException("ConditionalSearchInterpreter: The Interpreter is not capable of holding variables");
-            }
+            public static readonly Dictionary<string, Func<double[], double>> BuiltinMethods = new Dictionary<string, Func<double[], double>>() {
+                { "Sqrt", (p) => Math.Sqrt(p.FirstOrDefault()) },
+                { "Abs", (p) => Math.Abs(p.FirstOrDefault()) },
+                { "ln", (p) => Math.Log(p.FirstOrDefault()) },
+                { "Floor", (p) => Math.Floor(p.FirstOrDefault()) },
+                { "Ceiling", (p) => Math.Ceiling(p.FirstOrDefault()) },
+                { "Round", (p) => Math.Round(p.FirstOrDefault()) },
 
-            private Dictionary<string, MethodInfo> _cachedMethods;
-            private Dictionary<string, FieldInfo> _cachedFields;
-            private Dictionary<string, PropertyInfo> _cachedProperties;
+                { "Sin", (p) => Math.Sin(p.FirstOrDefault()) },
+                { "Cos", (p) => Math.Cos(p.FirstOrDefault()) },
+                { "Tan", (p) => Math.Tan(p.FirstOrDefault()) },
+                { "Cot", (p) => 1 / Math.Tan(p.FirstOrDefault()) },
+
+                { "Asin", (p) => Math.Asin(p.FirstOrDefault()) },
+                { "Acos", (p) => Math.Acos(p.FirstOrDefault()) },
+                { "Atan", (p) => Math.Atan(p.FirstOrDefault()) },
+                { "Atan2", (p) => Math.Atan2(p.FirstOrDefault(), p.ElementAtOrDefault(1)) },
+
+                { "Min", (p) => Math.Min(p.FirstOrDefault(), p.ElementAtOrDefault(1)) },
+                { "Max", (p) => Math.Max(p.FirstOrDefault(), p.ElementAtOrDefault(1)) },
+                { "Branch", (p) => p[0] == 0 ? p[2] : p[1] },
+            };
+            public Dictionary<string, Func<double[], double>> UserDefinedMethods { get; protected set; }
+            public Dictionary<string, double> UserDefinedConstants { get; protected set; }
+
+            public Dictionary<string, object> VariableDictionary { get; set; }
+            public static Dictionary<string, double> BuiltInConstants { get; private set; } = new Dictionary<string, double>() {
+                { "PI", Math.PI },
+                { "pi", Math.PI },
+                { "e", Math.E },
+                { "E", Math.E },
+                { "Sqrt2", 1.41421356237309504880168872420969807856967187537694807317667973799 },
+                { "Sqrt3", 1.732050807568877293527446341505872366942805253810380628055806 },
+                { "GoldenRatio", 1.6180339887498948482 },
+                { "ConwaysConst", 0.5772156649015328606065120900824024310421 },
+                { "Omega", 0.56714329040978387299996866221035554 },
+                { "Deg2Rad", 0.01745329252 },
+                { "Rad2Deg", 57.295779513 },
+            };
 
             public Interpreter() {
-                _cachedMethods = new Dictionary<string, MethodInfo>();
-                _cachedFields = new Dictionary<string, FieldInfo>();
-                _cachedProperties = new Dictionary<string, PropertyInfo>();
+                UserDefinedMethods = new Dictionary<string, Func<double[], double>>();
+                VariableDictionary = new Dictionary<string, object>();
             }
 
-            public Interpreter(BaseExpression expression, object native) : base() {
-                Expression = expression;
-                NativeObject = native;
+            public void FeedExpression(BaseExpression expr) {
+                Expression = expr;
             }
 
-            public void ModifyExpression(BaseExpression newExpr) {
-                Expression = newExpr;
+            public double Calculate() {
+                return double.Parse(Evaluate(Expression).ToString());
             }
 
-            public void ModifyNativeObject(object native) {
-                NativeObject = native;
-            }
-
-            public int IteratingIndex;
-            public object IteratingTarget;
-            public List<T> Filter<T>(List<T> original) {
-                List<T> ret = new List<T>();
-
-                for (int i = 0; i < original.Count; i++) {
-                    IteratingIndex = i;
-                    IteratingTarget = original[i];
-
-                    object output = Evaluate(Expression);
-
-                    if (output is bool boolean) {
-                        if (boolean) {
-                            ret.Add(original[i]);
-                        }
-                    } else {
-                        throw new ArgumentException("The output of program is not boolean type. Index: " + i + ". Expected return value: Boolean. Returned: " + output);
-                    }
-                }
-
-                return ret;
-            }
-
-            public bool CheckQualify<T>(T input, int index) {
-                IteratingTarget = input;
-                IteratingIndex = index;
-
-                object output = Evaluate(Expression);
-
-                if (output is bool boolean) {
-                    return boolean;
-                } else {
-                    throw new ArgumentException("The output of program is not boolean type. Expected return value: Boolean. Returned: " + output);
-                }
-            }
-
-            public object Interpret() {
-                return Evaluate(Expression);
+            private object Evaluate(BaseExpression expr) {
+                return expr.Evaluate(this);
             }
 
             public object EvaluateBinaryExpresison(BinaryExpression expression) {
@@ -599,6 +569,16 @@ namespace RealityProgrammer.CSStandard.Interpreter {
                                 return leftObj == rightObj;
                             case TokenType.BangEqual:
                                 return leftObj != rightObj;
+                            case TokenType.BitwiseOr:
+                                return leftObj | rightObj;
+                            case TokenType.BitwiseAnd:
+                                return leftObj & rightObj;
+                            case TokenType.BitwiseXor:
+                                return leftObj ^ rightObj;
+                            case TokenType.BitwiseLeftShift:
+                                return leftObj << rightObj;
+                            case TokenType.BitwiseRightShift:
+                                return leftObj >> rightObj;
                             default:
                                 throw new BinaryOperatorNotExistsException("Binary Operator cannot be applied between 2 Operands", leftObj, expression.Operator.Lexeme, rightObj);
                         }
@@ -615,12 +595,61 @@ namespace RealityProgrammer.CSStandard.Interpreter {
                 }
             }
 
+            public object EvaluateCallExpression(FunctionCallExpression expression) {
+                string methodName = expression.MethodName.Name.Lexeme;
+
+                if (BuiltinMethods.TryGetValue(methodName, out var func)) {
+                    return func(ConvertExpressionToNumber(expression.Parameters));
+                } else if (UserDefinedMethods.TryGetValue(methodName, out func)) {
+                    return func(ConvertExpressionToNumber(expression.Parameters));
+                }
+
+                throw new Exception("Method " + methodName + " cannot be found or not provided yet.");
+            }
+
+            public double[] ConvertExpressionToNumber(List<BaseExpression> exprs) {
+                double[] arr = new double[exprs.Count];
+
+                for (int i = 0; i < exprs.Count; i++) {
+                    arr[i] = Convert.ToDouble(Evaluate(exprs[i]));
+                }
+
+                return arr;
+            }
+
+            public object EvaluateGetExpression(GetExpression expression) {
+                throw new NotImplementedException();
+            }
+
             public object EvaluateGroupingExpression(GroupingExpression expression) {
                 return Evaluate(expression.Expression);
             }
 
             public object EvaluateLiteralExpression(LiteralExpression expression) {
                 return expression.Literal;
+            }
+
+            public object EvaluateLogicalExpression(LogicalExpression expression) {
+                object left = Evaluate(expression.Left);
+                int leftTruthy = IsTruthy(left);
+
+                switch (expression.Operator.Type) {
+                    case TokenType.Or:
+                        if (leftTruthy == 1) {
+                            return 1;
+                        } else {
+                            return IsTruthy(Evaluate(expression.Right));
+                        }
+
+                    case TokenType.And:
+                        return IsTruthy(left) * IsTruthy(Evaluate(expression.Right));
+                }
+
+                return false;
+            }
+
+            public object EvaluateTargetCallExpression(TargetFunctionCallExpression expression) {
+                throw new NotImplementedException();
             }
 
             public object EvaluateUnaryExpression(UnaryExpression expression) {
@@ -630,206 +659,135 @@ namespace RealityProgrammer.CSStandard.Interpreter {
                     switch (value) {
                         case int intValue: return -intValue;
                         case uint uintValue: return -uintValue;
-                        case char charValue: return -charValue;
                         case long longValue: return -longValue;
                         case decimal decimalValue: return -decimalValue;
                         case double doubleValue: return -doubleValue;
                         case float floatValue: return -floatValue;
                         case short shortValue: return -shortValue;
                         case ushort ushortValue: return -ushortValue;
+                        case char charValue: return -charValue;
                         case byte byteValue: return -byteValue;
                         case sbyte sbyteValue: return -sbyteValue;
                         default:
-                            if (value != null) {
-                                var method = value.GetType().GetMethod("op_UnaryNegation", BindingFlags.Public | BindingFlags.Static);
-
-                                if (method != null) {
-                                    return method.Invoke(null, new object[1] { value });
-                                }
-                            }
-
-                            throw new InterpreterErrorCodeException(InterpreterRuntimeErrorCode.InvalidMinusUnaryOperator);
+                            throw new InterpreterErrorCodeException(InterpreterRuntimeErrorCode.OperandNotANumber);
                     }
                 } else if (expression.Operator.Type == TokenType.Bang) {
-                    return !IsTruthy(value);
+                    return 1 - IsTruthy(value);
                 }
 
                 return null;
             }
 
-            private bool IsTruthy(object obj) {
-                if (obj == null) return false;
-                if (obj is bool b) return b;
-                
-                var method = obj.GetType().GetMethod("op_LogicalNot", BindingFlags.Public | BindingFlags.Static);
-                if (method != null) {
-                    return (bool)method.Invoke(null, new object[1] { obj });
-                }
+            private int IsTruthy(object obj) {
+                if (obj == null) return 0;
 
-                throw new InterpreterErrorCodeException(InterpreterRuntimeErrorCode.InvalidLogicalNotOperator);
-            }
-
-            public object Evaluate(BaseExpression expression) {
-                return expression.Evaluate(this);
-            }
-
-            public object EvaluateLogicalExpression(LogicalExpression expression) {
-                object left = Evaluate(expression.Left);
-
-                switch (expression.Operator.Type) {
-                    case TokenType.Or:
-                        return IsTruthy(left) || IsTruthy(Evaluate(expression.Right));
-
-                    case TokenType.And:
-                        return IsTruthy(left) && IsTruthy(Evaluate(expression.Right));
-                }
-
-                return false;
-            }
-
-            public object EvaluateGetExpression(GetExpression expression) {
-                var obj = Evaluate(expression.Expression);
-
-                if (obj != null) {
-                    Type type = obj.GetType();
-
-                    string name = expression.Variable.Name.Lexeme;
-                    if (_cachedFields.TryGetValue(name, out FieldInfo fieldInfo)) {
-                        return fieldInfo.GetValue(obj);
-                    } else {
-                        if (_cachedProperties.TryGetValue(name, out PropertyInfo propertyInfo)) {
-                            return propertyInfo.GetValue(obj);
-                        }
-                    }
-
-                    fieldInfo = type.GetField(name, BindingFlags.Public | BindingFlags.Instance);
-
-                    if (fieldInfo != null) {
-                        _cachedFields.Add(name, fieldInfo);
-                        return fieldInfo.GetValue(obj);
-                    } else {
-                        var propertyInfo = type.GetProperty(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty);
-
-                        if (propertyInfo != null) {
-                            _cachedProperties.Add(name, propertyInfo);
-                            return propertyInfo.GetValue(obj);
-                        } else {
-                            throw new Exception("Undefined property \"" + name + "\" of object type " + type.FullName);
-                        }
-                    }
-                }
-
-                throw new NullReferenceException("Trying to interpret property " + expression.Variable.Name.Lexeme + " of null object");
-            }
-
-            public object EvaluateTargetCallExpression(TargetFunctionCallExpression expression) {
-                object evaluate = Evaluate(expression.Target);
-
-                if (evaluate != null) {
-                    object[] parameters = new object[expression.Parameters.Count];
-
-                    for (int i = 0; i < parameters.Length; i++) {
-                        parameters[i] = Evaluate(expression.Parameters[i]);
-                    }
-
-                    string name = expression.MethodName.Name.Lexeme;
-
-                    if (_cachedMethods.TryGetValue(name, out MethodInfo methodInfo)) {
-                        return methodInfo.Invoke(evaluate, parameters);
-                    } else {
-                        methodInfo = evaluate.GetType().GetMethod(name, BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, parameters.Select(x => x.GetType()).ToArray(), null);
-
-                        if (methodInfo != null) {
-                            if (methodInfo.ReturnType == typeof(void)) {
-                                throw new ArgumentException("Trying to evaluate method \"" + name + "\" which has no return value");
-                            }
-
-                            _cachedMethods.Add(name, methodInfo);
-                            return methodInfo.Invoke(evaluate, parameters);
-                        }
-
-                        throw new NullReferenceException("Trying to call instance method \"" + name + "\" which doesn't exists.");
-                    }
-                }
-
-                throw new NullReferenceException("Trying to call instance method \"" + expression.MethodName.Name.Lexeme + "\" on null object");
-            }
-
-            public object EvaluateCallExpression(FunctionCallExpression expression) {
-                throw new NotImplementedException();
+                return Math.Sign(Convert.ToDouble(obj));
             }
 
             public object EvaluateVariableRetrieveExpression(VariableRetrieveExpression expr) {
-                throw new NotImplementedException();
+                if (BuiltInConstants.TryGetValue(expr.Name.Lexeme, out double constant)) {
+                    return constant;
+                }
+                if (VariableDictionary.TryGetValue(expr.Name.Lexeme, out object value)) {
+                    return Convert.ToDouble(value);
+                }
+                if (UserDefinedConstants.TryGetValue(expr.Name.Lexeme, out constant)) {
+                    return constant;
+                }
+
+                throw new VariableNotExistsException(expr.Name);
             }
         }
 
-        public Scanner ScannerInstance { get; protected set; }
-        public Lexer LexerInstance { get; protected set; }
-        public Interpreter InterpreterInstance { get; protected set; }
+        private Scanner ScannerInstance { get; set; }
+        private Lexer LexerInstance { get; set; }
+        private Interpreter InterpreterInstance { get; set; }
 
-        public ConditionalSearchInterpreter() {
+        public EquationCalculateInterpreter(string equation) {
+            ScannerInstance = new Scanner(equation);
+            LexerInstance = new Lexer();
             InterpreterInstance = new Interpreter();
         }
 
-        public void Clear() {
-            InterpretExpression = null;
-        }
-
-        public void InitializeProgram(string program) {
-            ScannerInstance = new Scanner(program);
+        public void ScanEquation() {
             ScannerInstance.Scan();
-
-            LexerInstance = new Lexer(ScannerInstance.TokenContainer);
         }
 
-        public BaseExpression backfield_Expression;
-        public BaseExpression InterpretExpression {
-            get => backfield_Expression;
-            set {
-                backfield_Expression = value;
+        public BaseExpression InterpretingExpression { get; protected set; }
+        public void InitializeLexing() {
+            LexerInstance.FeedTokens(ScannerInstance.TokenContainer);
+            InterpretingExpression = LexerInstance.StartLexing();
+        }
+
+        public void DefineMethod(string name, Func<double[], double> @delegate) {
+            if (!Interpreter.BuiltinMethods.ContainsKey(name)) {
+                throw new ArgumentException("User defined method with the name of \"" + name + "\" match with one of the built-in methods.");
             }
-        }
-        public void Lexing() {
-            try {
-                InterpretExpression = LexerInstance.StartLexing();
-            } catch (Exception e) {
-                InterpretExpression = null;
-                throw e;
+
+            if (InterpreterInstance.UserDefinedMethods.ContainsKey(name)) {
+                throw new ArgumentException("User defined method \"" + name + "\" is already exists.");
             }
+
+            InterpreterInstance.UserDefinedMethods.Add(name, @delegate);
         }
 
-        public List<T> InterpretFilter<T>(List<T> input, object native) {
-            InterpreterInstance.ModifyExpression(InterpretExpression);
-            InterpreterInstance.ModifyNativeObject(native);
-
-            return InterpreterInstance.Filter(input);
-        }
-
-        public bool CheckQualify<T>(T input, int index, object native) {
-            InterpreterInstance.ModifyExpression(InterpretExpression);
-            InterpreterInstance.ModifyNativeObject(native);
-
-            return InterpreterInstance.CheckQualify(input, index);
-        }
-
-        private static readonly Type voidType = typeof(void);
-        public Type GetOutputType {
-            get {
-                if (InterpretExpression == null) return voidType;
-
-                object output = InterpreterInstance.Evaluate(InterpretExpression);
-
-                if (output == null) return voidType;
-
-                return output.GetType();
+        public void ReplaceMethod(string name, Func<double[], double> @delegate) {
+            if (!InterpreterInstance.UserDefinedMethods.ContainsKey(name)) {
+                DefineMethod(name, @delegate);
+                return;
             }
+
+            InterpreterInstance.UserDefinedMethods[name] = @delegate;
         }
 
-        public bool IsValid {
-            get {
-                return InterpretExpression != null;
+        public void DefineConstant(string name, double value) {
+            if (!Interpreter.BuiltInConstants.ContainsKey(name)) {
+                throw new ArgumentException("User defined constant with the name of \"" + name + "\" match with one of the built-in constants.");
             }
+
+            if (InterpreterInstance.UserDefinedConstants.ContainsKey(name)) {
+                throw new ArgumentException("User defined constant \"" + name + "\" is already exists.");
+            }
+
+            InterpreterInstance.UserDefinedConstants.Add(name, value);
+        }
+
+        public double GetConstant(string name) {
+            if (!InterpreterInstance.UserDefinedConstants.ContainsKey(name)) {
+                throw new ArgumentException("User defined constant \"" + name + "\" is not exists.");
+            }
+
+            return InterpreterInstance.UserDefinedConstants[name];
+        }
+
+        public void DefineParameter(string name, double value) {
+            if (InterpreterInstance.VariableDictionary.ContainsKey(name)) {
+                throw new ArgumentException("User defined parameter \"" + name + "\" is already exists.");
+            }
+
+            InterpreterInstance.VariableDictionary.Add(name, value);
+        }
+
+        public void ModifyParameter(string name, double newValue) {
+            if (!InterpreterInstance.VariableDictionary.ContainsKey(name)) {
+                DefineParameter(name, newValue);
+                return;
+            }
+
+            InterpreterInstance.VariableDictionary[name] = newValue;
+        }
+
+        public double GetParameter(string name) {
+            if (!InterpreterInstance.VariableDictionary.ContainsKey(name)) {
+                throw new ArgumentException("User defined parameter \"" + name + "\" is not exists.");
+            }
+
+            return Convert.ToDouble(InterpreterInstance.VariableDictionary[name]);
+        }
+
+        public double Calculate() {
+            InterpreterInstance.FeedExpression(InterpretingExpression);
+            return InterpreterInstance.Calculate();
         }
     }
 }

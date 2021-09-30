@@ -1,17 +1,13 @@
-﻿using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using UnityEngine;
 
 namespace RealityProgrammer.CSStandard.Interpreter.Expressions {
     public class FunctionCallExpression : BaseExpression {
-        public BaseExpression Target { get; protected set; }
         public IdentifierExpression MethodName { get; protected set; }
         public List<BaseExpression> Parameters { get; protected set; }
 
-        public FunctionCallExpression(BaseExpression target, IdentifierExpression method, List<BaseExpression> parameters) {
-            Target = target;
+        public FunctionCallExpression(IdentifierExpression method, List<BaseExpression> parameters) {
             MethodName = method;
             Parameters = parameters;
         }

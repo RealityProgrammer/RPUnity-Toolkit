@@ -84,10 +84,8 @@ namespace RealityProgrammer.CSStandard.Utilities {
                     indent += isLast ? "   " : TreeVerticalBranch;
 
                     if (call.Parameters.Count == 0) {
-                        ShowExpressionTree(call.Target, output, indent, false);
                         ShowExpressionTree(call.MethodName, output, indent, true);
                     } else {
-                        ShowExpressionTree(call.Target, output, indent, false);
                         ShowExpressionTree(call.MethodName, output, indent, false);
 
                         output.Append(indent);
@@ -101,12 +99,43 @@ namespace RealityProgrammer.CSStandard.Utilities {
                     }
                     break;
 
+                case TargetFunctionCallExpression targetCall:
+                    output.AppendLine(targetCall.GetType().Name);
+                    indent += isLast ? "   " : TreeVerticalBranch;
+
+                    if (targetCall.Parameters.Count == 0) {
+                        ShowExpressionTree(targetCall.Target, output, indent, false);
+                        ShowExpressionTree(targetCall.MethodName, output, indent, true);
+                    } else {
+                        ShowExpressionTree(targetCall.Target, output, indent, false);
+                        ShowExpressionTree(targetCall.MethodName, output, indent, false);
+
+                        output.Append(indent);
+                        output.Append(TreeLastBranch);
+                        output.AppendLine("Parameters (" + targetCall.Parameters.Count + "):");
+
+                        indent += "   ";
+                        for (int i = 0; i < targetCall.Parameters.Count; i++) {
+                            ShowExpressionTree(targetCall.Parameters[i], output, indent, i == targetCall.Parameters.Count - 1);
+                        }
+                    }
+                    break;
+
                 case TargetExpression target:
                     output.AppendLine(target.GetType().Name);
                     indent += isLast ? "   " : TreeVerticalBranch;
                     output.Append(indent);
                     output.Append(TreeLastBranch);
                     output.AppendLine("Name: " + target.Token.Type);
+                    break;
+
+                case VariableRetrieveExpression varRet:
+                    output.AppendLine(varRet.GetType().Name);
+                    indent += isLast ? "   " : TreeVerticalBranch;
+
+                    output.Append(indent);
+                    output.Append(TreeLastBranch);
+                    output.AppendLine("Name: " + varRet.Name.Lexeme);
                     break;
 
                 case Interpreter.ConditionalSearchInterpreter.ExclusiveIdentifierExpression excIdentifier:

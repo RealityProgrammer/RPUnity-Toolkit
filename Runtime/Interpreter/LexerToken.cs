@@ -5,10 +5,10 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace RealityProgrammer.CSStandard.Interpreter {
-    public class LexerToken {
-        public TokenType Type { get; protected set; }
-        public object Literal { get; protected set; }
-        public string Lexeme { get; protected set; }
+    public struct LexerToken {
+        public TokenType Type { get; set; }
+        public object Literal { get; set; }
+        public string Lexeme { get; set; }
 
         public LexerToken(TokenType type, object literal, string lexeme) {
             Type = type;
@@ -24,7 +24,7 @@ namespace RealityProgrammer.CSStandard.Interpreter {
             }
 
             if (!string.IsNullOrEmpty(Lexeme)) {
-                sb.Append(", ").Append(Lexeme);
+                sb.Append(", \"").Append(Lexeme).Append("\"");
             }
 
             sb.Append(")");

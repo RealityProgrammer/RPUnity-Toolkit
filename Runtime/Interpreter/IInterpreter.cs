@@ -1,13 +1,18 @@
 ﻿using RealityProgrammer.CSStandard.Interpreter.Expressions;
+using System.Collections.Generic;
 
 namespace RealityProgrammer.CSStandard.Interpreter {
     public interface IInterpreter {
-        object EvaluateLiteralExpression(LiteralExpression expression);
-        object EvaluateUnaryExpression(UnaryExpression expression);
-        object EvaluateBinaryExpresison(BinaryExpression expression);
-        object EvaluateGroupingExpression(GroupingExpression expression);
-        object EvaluateLogicalExpression(LogicalExpression expression);
-        object EvaluateGetExpression(GetExpression expression);
-        object EvaluateCallExpression(FunctionCallExpression expression);
+        Dictionary<string, object> VariableDictionary { get; set; }
+
+        object EvaluateVariableRetrieveExpression(VariableRetrieveExpression expr);
+        object EvaluateLiteralExpression(LiteralExpression expr);
+        object EvaluateUnaryExpression(UnaryExpression expr);
+        object EvaluateBinaryExpresison(BinaryExpression expr);
+        object EvaluateGroupingExpression(GroupingExpression expr);
+        object EvaluateLogicalExpression(LogicalExpression expr);
+        object EvaluateGetExpression(GetExpression expr);
+        object EvaluateCallExpression(FunctionCallExpression expr);
+        object EvaluateTargetCallExpression(TargetFunctionCallExpression expr);
     }
 }
