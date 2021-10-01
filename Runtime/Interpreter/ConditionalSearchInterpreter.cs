@@ -84,6 +84,7 @@ namespace RealityProgrammer.CSStandard.Interpreter {
                     case '-': AddToken(TokenType.Minus); break;
                     case '*': AddToken(TokenType.Star); break;
                     case '/': AddToken(TokenType.Slash); break;
+                    case '%': AddToken(TokenType.Percentage); break;
 
                     case '!': AddToken(Match('=') ? TokenType.BangEqual : TokenType.Bang); break;
                     case '=': AddToken(Match('=') ? TokenType.EqualEqual : TokenType.Equal); break;
@@ -367,7 +368,7 @@ namespace RealityProgrammer.CSStandard.Interpreter {
             private BaseExpression Factor() {
                 var expression = Unary();
 
-                while (Match(TokenType.Star, TokenType.Slash)) {
+                while (Match(TokenType.Star, TokenType.Slash, TokenType.Percentage)) {
                     expression = new BinaryExpression(expression, Previous(), Unary());
                 }
 
@@ -587,6 +588,8 @@ namespace RealityProgrammer.CSStandard.Interpreter {
                                 return leftObj * rightObj;
                             case TokenType.Slash:
                                 return leftObj / rightObj;
+                            case TokenType.Percentage:
+                                return leftObj % rightObj;
                             case TokenType.Greater:
                                 return leftObj > rightObj;
                             case TokenType.GreaterEqual:

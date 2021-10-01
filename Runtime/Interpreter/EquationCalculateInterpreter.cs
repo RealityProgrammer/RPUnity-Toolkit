@@ -53,6 +53,7 @@ namespace RealityProgrammer.CSStandard.Interpreter {
                     case '-': AddToken(TokenType.Minus); break;
                     case '*': AddToken(TokenType.Star); break;
                     case '/': AddToken(TokenType.Slash); break;
+                    case '%': AddToken(TokenType.Percentage); break;
 
                     case '!': AddToken(Match('=') ? TokenType.BangEqual : TokenType.Bang); break;
                     case '=': AddToken(Match('=') ? TokenType.EqualEqual : TokenType.Equal); break;
@@ -367,7 +368,7 @@ namespace RealityProgrammer.CSStandard.Interpreter {
             private BaseExpression Factor() {
                 var expression = Unary();
 
-                while (Match(TokenType.Star, TokenType.Slash)) {
+                while (Match(TokenType.Star, TokenType.Slash, TokenType.Percentage)) {
                     expression = new BinaryExpression(expression, Previous(), Unary());
                 }
 
@@ -492,6 +493,7 @@ namespace RealityProgrammer.CSStandard.Interpreter {
                 { "Floor", (p) => Math.Floor(p.FirstOrDefault()) },
                 { "Ceiling", (p) => Math.Ceiling(p.FirstOrDefault()) },
                 { "Round", (p) => Math.Round(p.FirstOrDefault()) },
+                { "Pow", (p) => Math.Pow(p[0], p[1]) },
 
                 { "Sin", (p) => Math.Sin(p.FirstOrDefault()) },
                 { "Cos", (p) => Math.Cos(p.FirstOrDefault()) },
@@ -535,7 +537,7 @@ namespace RealityProgrammer.CSStandard.Interpreter {
             }
 
             public double Calculate() {
-                return double.Parse(Evaluate(Expression).ToString());
+                return ((IConvertible)Evaluate(Expression)).ToDouble(null);
             }
 
             private object Evaluate(BaseExpression expr) {
@@ -557,6 +559,8 @@ namespace RealityProgrammer.CSStandard.Interpreter {
                                 return leftObj * rightObj;
                             case TokenType.Slash:
                                 return leftObj / rightObj;
+                            case TokenType.Percentage:
+                                return leftObj % rightObj;
                             case TokenType.Greater:
                                 return leftObj > rightObj;
                             case TokenType.GreaterEqual:
@@ -611,7 +615,7 @@ namespace RealityProgrammer.CSStandard.Interpreter {
                 double[] arr = new double[exprs.Count];
 
                 for (int i = 0; i < exprs.Count; i++) {
-                    arr[i] = Convert.ToDouble(Evaluate(exprs[i]));
+                    arr[i] = ((IConvertible)Evaluate(exprs[i])).ToDouble(null);
                 }
 
                 return arr;
@@ -681,7 +685,7 @@ namespace RealityProgrammer.CSStandard.Interpreter {
             private int IsTruthy(object obj) {
                 if (obj == null) return 0;
 
-                return Math.Sign(Convert.ToDouble(obj));
+                return Math.Sign(((IConvertible)obj).ToDouble(null));
             }
 
             public object EvaluateVariableRetrieveExpression(VariableRetrieveExpression expr) {
@@ -689,7 +693,7 @@ namespace RealityProgrammer.CSStandard.Interpreter {
                     return constant;
                 }
                 if (VariableDictionary.TryGetValue(expr.Name.Lexeme, out object value)) {
-                    return Convert.ToDouble(value);
+                    return ((IConvertible)value).ToDouble(null);
                 }
                 if (UserDefinedConstants.TryGetValue(expr.Name.Lexeme, out constant)) {
                     return constant;
@@ -703,13 +707,24 @@ namespace RealityProgrammer.CSStandard.Interpreter {
         private Lexer LexerInstance { get; set; }
         private Interpreter InterpreterInstance { get; set; }
 
-        public EquationCalculateInterpreter(string equation) {
-            ScannerInstance = new Scanner(equation);
+        public EquationCalculateInterpreter() {
             LexerInstance = new Lexer();
             InterpreterInstance = new Interpreter();
         }
 
+        public EquationCalculateInterpreter(string equation) : base() {
+            ScannerInstance = new Scanner(equation);
+        }
+
+        public void ChangeEquation(string equation) {
+            ScannerInstance = new Scanner(equation);
+        }
+
         public void ScanEquation() {
+            if (ScannerInstance == null) {
+                throw new NullReferenceException("Cannot scan equation as scanner instance is null, which caused by unprovided equation. Call ChangeEquation().");
+            }
+
             ScannerInstance.Scan();
         }
 
@@ -788,6 +803,19 @@ namespace RealityProgrammer.CSStandard.Interpreter {
         public double Calculate() {
             InterpreterInstance.FeedExpression(InterpretingExpression);
             return InterpreterInstance.Calculate();
+        }
+
+        /// <summary>
+        /// Fast code to calculate simple equations, only once, not recommended to calculate complicated equations (such as custom parameters and constants) or calculate same equation multiple times.
+        /// </summary>
+        /// <param name="equation">Equation with plain numbers, operators and groupings</param>
+        /// <returns></returns>
+        public static double Calculate(string equation) {
+            EquationCalculateInterpreter calculator = new EquationCalculateInterpreter(equation);
+            calculator.ScanEquation();
+            calculator.InitializeLexing();
+
+            return calculator.Calculate();
         }
     }
 }
