@@ -130,97 +130,15 @@ namespace RealityProgrammer.CSStandard.Interpreter {
                 bool isFloatingPoint = false;
                 if (Peek() == '.') {
                     Advance();
-
-                    if (!isFloatingPoint) {
-                        isFloatingPoint = true;
-                    } else {
-                        throw new Exception("Multiple decimal seperator symbol");
-                    }
+                    isFloatingPoint = true;
 
                     while (char.IsDigit(Peek())) Advance();
                 }
 
-                string digits = SourceProgram.Substring(start, position - start);
                 if (isFloatingPoint) {
-                    char peek = Peek();
-
-                    switch (peek) {
-                        case 'u':
-                        case 'U':
-                        case 'l':
-                        case 'L':
-                            throw new InvalidNumericLiteralException("Integer literals cannot be applied to floating point.");
-
-                        case 'f':
-                            AddToken(TokenType.Number, float.Parse(digits));
-                            Advance();
-                            break;
-
-                        case 'd':
-                            AddToken(TokenType.Number, double.Parse(digits));
-                            Advance();
-                            break;
-
-                        default:
-                            AddToken(TokenType.Number, double.Parse(digits));
-                            break;
-
-                        case 'm':
-                            AddToken(TokenType.Number, decimal.Parse(digits));
-                            Advance();
-                            break;
-                    }
+                    AddNumberToken(double.Parse(SourceProgram.Substring(start, position - start)));
                 } else {
-                    bool isLong = false, isUnsigned = false;
-
-                    bool isChecking = true;
-                    while (isChecking) {
-                        char peek = Peek();
-                        switch (peek) {
-                            case 'u':
-                            case 'U':
-                                if (!isUnsigned) {
-                                    isUnsigned = true;
-                                    Advance();
-                                } else {
-                                    ThrowUnexpectedCharacter(peek);
-                                }
-                                break;
-
-                            case 'l':
-                            case 'L':
-                                if (!isLong) {
-                                    isLong = true;
-                                    Advance();
-                                } else {
-                                    ThrowUnexpectedCharacter(peek);
-                                }
-                                break;
-
-                            case 'f':
-                            case 'd':
-                            case 'm':
-                                throw new InvalidNumericLiteralException("Floating point number require a decimal seperator '.' somewhere or at the end.");
-
-                            default:
-                                isChecking = false;
-                                break;
-                        }
-                    }
-
-                    if (isUnsigned) {
-                        if (isLong) {
-                            AddNumberToken(ulong.Parse(digits));
-                        } else {
-                            AddNumberToken(uint.Parse(digits));
-                        }
-                    } else {
-                        if (isLong) {
-                            AddNumberToken(long.Parse(digits));
-                        } else {
-                            AddNumberToken(int.Parse(digits));
-                        }
-                    }
+                    AddNumberToken(long.Parse(SourceProgram.Substring(start, position - start)));
                 }
             }
 
@@ -507,7 +425,7 @@ namespace RealityProgrammer.CSStandard.Interpreter {
 
                 { "Min", (p) => Math.Min(p.FirstOrDefault(), p.ElementAtOrDefault(1)) },
                 { "Max", (p) => Math.Max(p.FirstOrDefault(), p.ElementAtOrDefault(1)) },
-                { "Branch", (p) => p[0] == 0 ? p[2] : p[1] },
+                { "Branch", (p) => p[0] == 1 ? p[1] : p[2] },
             };
             public Dictionary<string, Func<double[], double>> UserDefinedMethods { get; protected set; }
             public Dictionary<string, double> UserDefinedConstants { get; protected set; }
@@ -537,7 +455,7 @@ namespace RealityProgrammer.CSStandard.Interpreter {
             }
 
             public double Calculate() {
-                return ((IConvertible)Evaluate(Expression)).ToDouble(null);
+                return (double)Evaluate(Expression);
             }
 
             private object Evaluate(BaseExpression expr) {
@@ -573,16 +491,6 @@ namespace RealityProgrammer.CSStandard.Interpreter {
                                 return leftObj == rightObj;
                             case TokenType.BangEqual:
                                 return leftObj != rightObj;
-                            case TokenType.BitwiseOr:
-                                return leftObj | rightObj;
-                            case TokenType.BitwiseAnd:
-                                return leftObj & rightObj;
-                            case TokenType.BitwiseXor:
-                                return leftObj ^ rightObj;
-                            case TokenType.BitwiseLeftShift:
-                                return leftObj << rightObj;
-                            case TokenType.BitwiseRightShift:
-                                return leftObj >> rightObj;
                             default:
                                 throw new BinaryOperatorNotExistsException("Binary Operator cannot be applied between 2 Operands", leftObj, expression.Operator.Lexeme, rightObj);
                         }
@@ -635,12 +543,12 @@ namespace RealityProgrammer.CSStandard.Interpreter {
 
             public object EvaluateLogicalExpression(LogicalExpression expression) {
                 object left = Evaluate(expression.Left);
-                int leftTruthy = IsTruthy(left);
+                long leftTruthy = IsTruthy(left);
 
                 switch (expression.Operator.Type) {
                     case TokenType.Or:
                         if (leftTruthy == 1) {
-                            return 1;
+                            return 1L;
                         } else {
                             return IsTruthy(Evaluate(expression.Right));
                         }
@@ -661,31 +569,22 @@ namespace RealityProgrammer.CSStandard.Interpreter {
 
                 if (expression.Operator.Type == TokenType.Minus) {
                     switch (value) {
-                        case int intValue: return -intValue;
-                        case uint uintValue: return -uintValue;
                         case long longValue: return -longValue;
-                        case decimal decimalValue: return -decimalValue;
                         case double doubleValue: return -doubleValue;
-                        case float floatValue: return -floatValue;
-                        case short shortValue: return -shortValue;
-                        case ushort ushortValue: return -ushortValue;
-                        case char charValue: return -charValue;
-                        case byte byteValue: return -byteValue;
-                        case sbyte sbyteValue: return -sbyteValue;
                         default:
                             throw new InterpreterErrorCodeException(InterpreterRuntimeErrorCode.OperandNotANumber);
                     }
                 } else if (expression.Operator.Type == TokenType.Bang) {
-                    return 1 - IsTruthy(value);
+                    return 1L - IsTruthy(value);
                 }
 
                 return null;
             }
 
-            private int IsTruthy(object obj) {
+            private long IsTruthy(object obj) {
                 if (obj == null) return 0;
 
-                return Math.Sign(((IConvertible)obj).ToDouble(null));
+                return (long)Math.Sign(((IConvertible)obj).ToDouble(null));
             }
 
             public object EvaluateVariableRetrieveExpression(VariableRetrieveExpression expr) {

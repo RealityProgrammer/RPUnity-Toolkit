@@ -26,6 +26,7 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
 #endif
         }
 
+#if UNITY_EDITOR
         private void DeserializeCall() {
             EditorApplication.update -= DeserializeCall;
 
@@ -36,6 +37,7 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
             if (!sceneAsset) scenePath = string.Empty;
             if (!Application.isPlaying) EditorSceneManager.MarkAllScenesDirty();
         }
+#endif
 
         public void OnBeforeSerialize() {
 #if UNITY_EDITOR
