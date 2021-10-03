@@ -1,11 +1,8 @@
-using System.Collections;
 using System.Linq;
 using System.Collections.Generic;
 using RealityProgrammer.CSStandard.Interpreter.Exceptions;
 using RealityProgrammer.CSStandard.Interpreter.Expressions;
-using RealityProgrammer.CSStandard.Utilities;
 using System;
-using UnityEngine;
 
 namespace RealityProgrammer.CSStandard.Interpreter {
     public class EquationCalculateInterpreter {
@@ -516,7 +513,7 @@ namespace RealityProgrammer.CSStandard.Interpreter {
                     return func(ConvertExpressionToNumber(expression.Parameters));
                 }
 
-                throw new Exception("Method " + methodName + " cannot be found or not provided yet.");
+                throw new UndefinedMemberException(expression.MethodName.Name);
             }
 
             public double[] ConvertExpressionToNumber(List<BaseExpression> exprs) {
@@ -584,7 +581,7 @@ namespace RealityProgrammer.CSStandard.Interpreter {
             private long IsTruthy(object obj) {
                 if (obj == null) return 0;
 
-                return (long)Math.Sign(((IConvertible)obj).ToDouble(null));
+                return Math.Sign(((IConvertible)obj).ToDouble(null));
             }
 
             public object EvaluateVariableRetrieveExpression(VariableRetrieveExpression expr) {
@@ -696,7 +693,7 @@ namespace RealityProgrammer.CSStandard.Interpreter {
                 throw new ArgumentException("User defined parameter \"" + name + "\" is not exists.");
             }
 
-            return Convert.ToDouble(InterpreterInstance.VariableDictionary[name]);
+            return ((IConvertible)InterpreterInstance.VariableDictionary[name]).ToDouble(null);
         }
 
         public double Calculate() {

@@ -1,15 +1,11 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.Serialization;
 using UnityEngine;
 
 namespace RealityProgrammer.UnityToolkit.Core.Miscs {
-    [DebuggerDisplay("Count = {Count}")]
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(false)]
     public class SerializableDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue>, ISerializable {
         [Serializable]
         public struct Entry {
@@ -131,7 +127,6 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
 
         public KeyCollection Keys {
             get {
-                Contract.Ensures(Contract.Result<KeyCollection>() != null);
                 if (keys == null) keys = new KeyCollection(this);
                 return keys;
             }
@@ -153,7 +148,6 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
 
         public ValueCollection Values {
             get {
-                Contract.Ensures(Contract.Result<ValueCollection>() != null);
                 if (values == null) values = new ValueCollection(this);
                 return values;
             }
@@ -365,54 +359,11 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
             version++;
         }
 
-        //public virtual void OnDeserialization(Object sender) {
-        //    SerializationInfo siInfo;
-
-        //    if (siInfo == null) {
-        //        // It might be necessary to call OnDeserialization from a container if the container object also implements
-        //        // OnDeserialization. However, remoting will call OnDeserialization again.
-        //        // We can return immediately if this function is called twice. 
-        //        // Note we set remove the serialization info from the table at the end of this method.
-        //        return;
-        //    }
-
-        //    int realVersion = siInfo.GetInt32(VersionName);
-        //    int hashsize = siInfo.GetInt32(HashSizeName);
-        //    comparer = (IEqualityComparer<TKey>)siInfo.GetValue(ComparerName, typeof(IEqualityComparer<TKey>));
-
-        //    if (hashsize != 0) {
-        //        buckets = new int[hashsize];
-        //        for (int i = 0; i < buckets.Length; i++) buckets[i] = -1;
-        //        entries = new Entry[hashsize];
-        //        freeList = -1;
-
-        //        KeyValuePair<TKey, TValue>[] array = (KeyValuePair<TKey, TValue>[])
-        //            siInfo.GetValue(KeyValuePairsName, typeof(KeyValuePair<TKey, TValue>[]));
-
-        //        if (array == null) {
-        //            ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingKeys);
-        //        }
-
-        //        for (int i = 0; i < array.Length; i++) {
-        //            if (array[i].Key == null) {
-        //                ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_NullKey);
-        //            }
-        //            Insert(array[i].Key, array[i].Value, true);
-        //        }
-        //    } else {
-        //        buckets = null;
-        //    }
-
-        //    version = realVersion;
-        //    HashHelpers.SerializationInfoTable.Remove(this);
-        //}
-
         private void Resize() {
             Resize(PrimeHelper.ExpandPrime(count), false);
         }
 
         private void Resize(int newSize, bool forceNewHashCodes) {
-            Contract.Assert(newSize >= entries.Length);
             int[] newBuckets = new int[newSize];
             for (int i = 0; i < newBuckets.Length; i++) newBuckets[i] = -1;
             Entry[] newEntries = new Entry[newSize];
@@ -749,7 +700,6 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
             }
         }
 
-        [DebuggerDisplay("Count = {Count}")]
         [Serializable]
         public sealed class KeyCollection : ICollection<TKey>, ICollection, IReadOnlyCollection<TKey> {
             private SerializableDictionary<TKey, TValue> dictionary;
@@ -930,7 +880,6 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
             }
         }
 
-        [DebuggerDisplay("Count = {Count}")]
         [Serializable]
         public sealed class ValueCollection : ICollection<TValue>, ICollection, IReadOnlyCollection<TValue> {
             private SerializableDictionary<TKey, TValue> dictionary;

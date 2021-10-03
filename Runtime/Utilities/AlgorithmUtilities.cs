@@ -1,9 +1,7 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
 using System.Runtime.CompilerServices;
-using System.Linq;
 
 using SRandom = System.Random;
 

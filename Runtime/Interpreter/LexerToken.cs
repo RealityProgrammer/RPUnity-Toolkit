@@ -2,10 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace RealityProgrammer.CSStandard.Interpreter {
-    public struct LexerToken {
+    public class LexerToken {
         public TokenType Type { get; set; }
         public object Literal { get; set; }
         public string Lexeme { get; set; }

@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using UnityEngine;
 
 namespace RealityProgrammer.CSStandard.Interpreter.Exceptions {
     public class VariableNotExistsException : Exception {

@@ -3,7 +3,6 @@ using System.Linq;
 using System.Reflection;
 using System.Collections.Generic;
 using RealityProgrammer.CSStandard.Interpreter.Expressions;
-using RealityProgrammer.CSStandard.Utilities;
 using RealityProgrammer.CSStandard.Interpreter.Exceptions;
 
 namespace RealityProgrammer.CSStandard.Interpreter {
@@ -158,7 +157,7 @@ namespace RealityProgrammer.CSStandard.Interpreter {
                     if (!isFloatingPoint) {
                         isFloatingPoint = true;
                     } else {
-                        throw new Exception("Multiple decimal seperator symbol");
+                        throw new ArgumentException("Multiple decimal seperator symbol");
                     }
 
                     while (char.IsDigit(Peek())) Advance();
@@ -398,7 +397,7 @@ namespace RealityProgrammer.CSStandard.Interpreter {
                         if (Check(TokenType.Identifier)) {
                             name = Advance();
                         } else {
-                            throw new Exception("Expected identifier after member access '.'");
+                            throw new ArgumentException("Expected identifier after member access '.'");
                         }
 
                         if (Check(TokenType.LeftParenthesis)) {
@@ -717,7 +716,7 @@ namespace RealityProgrammer.CSStandard.Interpreter {
                             _cachedProperties.Add(name, propertyInfo);
                             return propertyInfo.GetValue(obj);
                         } else {
-                            throw new Exception("Undefined property \"" + name + "\" of object type " + type.FullName);
+                            throw new UndefinedMemberException("Undefined property \"" + name + "\" of object type " + type.FullName);
                         }
                     }
                 }
@@ -796,9 +795,9 @@ namespace RealityProgrammer.CSStandard.Interpreter {
         public void Lexing() {
             try {
                 InterpretExpression = LexerInstance.StartLexing();
-            } catch (Exception e) {
+            } catch {
                 InterpretExpression = null;
-                throw e;
+                throw;
             }
         }
 
