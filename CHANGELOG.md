@@ -3,6 +3,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [1.2.3] - 2020-10-06
+### Added
+- Custom Editors for certain Shader Property modification class
+
+### Fixed
+- Serializable Dictionary performance loss due to caching bug
+
 ## [1.2.2] - 2020-10-03
 ### Fixed
 - Editor Assembly Definition prevent users from build the game due to incorrect setup
