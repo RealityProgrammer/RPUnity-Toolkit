@@ -4,7 +4,7 @@ A collection of scripts, editor scripts, utilities to improve Unity workflow and
 # Requirements
 1. Unity Editor version (at least): 2020.3.1f16.
 2. API compatibility version: .NET 4.0 (Project Settings -> Player -> Configuration -> API compatibility version -> Set to .NET 4.0). This might not be required in the far future, and there might be alternate to currently using API (RuntimeBinder, etc...).  
-3. Dependencies for this package are not needed (for now, soome might be required in the future. Ex: DOTween, Newtonsoft.Json, etc...)
+3. Dependencies for this package are not needed (for now, some might be required in the future. Ex: DOTween, Newtonsoft.Json, etc...)
 
 # Installation
 You can install this by using one of the two following ways:
