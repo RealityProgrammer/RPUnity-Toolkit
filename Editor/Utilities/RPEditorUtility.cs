@@ -46,43 +46,47 @@ namespace RealityProgrammer.UnityToolkit.Editors.Utility {
             return property;
         }
 
-        public static object GetActualInstance(FieldInfo fieldInfo, SerializedProperty property) {
-            var obj = fieldInfo.GetValue(property.serializedObject.targetObject);
-            if (obj == null) { return null; }
+        public static object GetActualInstance(SerializedProperty property) {
+            var path = property.propertyPath.Replace(".Array.data[", "[");
+            object obj = property.serializedObject.targetObject;
 
-            object actualObject;
-            Type objectType = obj.GetType();
+            var elements = path.Split('.');
 
-            if (objectType.IsArray) {
-                actualObject = ((object[])obj)[ExtractIndex(property)];
-            } else if (obj is IList ilist && objectType.IsGenericType) {
-                actualObject = ilist[ExtractIndex(property)];
-            } else {
-                actualObject = obj;
+            for (int i = 0; i < elements.Length; i++) {
+                var element = elements[i];
+
+                if (element.Contains("[")) {
+                    var elementName = element.Substring(0, element.IndexOf("["));
+                    obj = GetValue(obj, elementName, ExtractIndexFromString(element));
+                } else {
+                    obj = GetValue(obj, element);
+                }
             }
 
-            return actualObject;
+            return obj;
         }
 
-        public static T GetActualInstance<T>(FieldInfo fieldInfo, SerializedProperty property) {
-            var obj = fieldInfo.GetValue(property.serializedObject.targetObject);
-            if (obj == null) { return default; }
+        public static T GetActualInstance<T>(SerializedProperty property) {
+            return (T)GetActualInstance(property);
+        }
 
-            object actualObject;
-            Type objectType = obj.GetType();
+        private static object GetValue(object target, string name) {
+            if (target == null) return null;
 
-            if (objectType.IsArray) {
-                actualObject = ((object[])obj)[ExtractIndex(property)];
-            } else if (obj is IList ilist && objectType.IsGenericType) {
-                actualObject = ilist[ExtractIndex(property)];
-            } else {
-                actualObject = obj;
+            return target.GetType().GetField(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic).GetValue(target);
+        }
+
+        private static object GetValue(object target, string name, int index) {
+            var enumerator = (GetValue(target, name) as IEnumerable).GetEnumerator();
+            
+            while (index-- >= 0) {
+                enumerator.MoveNext();
             }
 
-            return (T)actualObject;
+            return enumerator.Current;
         }
 
-        public static int ExtractIndex(SerializedProperty property) {
+        public static int ExtractIndexFromProperty(SerializedProperty property) {
             string path = property.propertyPath;
 
             string nums = string.Empty;
@@ -95,13 +99,30 @@ namespace RealityProgrammer.UnityToolkit.Editors.Utility {
             return int.Parse(nums);
         }
 
-        private static readonly Type[] builtinSerializableTypes = new Type[] {
-            typeof(Vector2), typeof(Vector3), typeof(Vector4), typeof(Color),
-            typeof(Vector2Int), typeof(Vector3Int), /* This is sad typeof(Vector4Int), */ typeof(Color32),
+        public static int ExtractIndexFromString(string str) {
+            string nums = string.Empty;
+            for (int i = str.Length - 2; i >= 0; i--) {
+                if (!char.IsDigit(str[i])) break;
+
+                nums = str[i] + nums;
+            }
+
+            return int.Parse(nums);
+        }
+
+        private static readonly HashSet<Type> builtinSerializableTypes = new HashSet<Type> {
+            typeof(Vector2), typeof(Vector3), typeof(Vector4),
+            typeof(Vector2Int), typeof(Vector3Int),
+            typeof(Color), typeof(Color32),
             typeof(Rect), typeof(RectInt), typeof(Quaternion), typeof(Matrix4x4), typeof(LayerMask),
             typeof(AnimationCurve), typeof(Gradient), typeof(RectOffset), typeof(GUIStyle),
         };
         private static readonly Type unityEngineObjectType = typeof(UnityEngine.Object);
+        private static readonly Type systemListGeneric = typeof(List<>);
+        private static readonly Type typeType = typeof(Type);
+        private static readonly Type stringType = typeof(string);
+
+        public static HashSet<Type> GetBuiltInSerializableTypes() => builtinSerializableTypes;
 
         public static bool IsSerializableByUnity<T>() {
             return IsSerializableByUnity(typeof(T));
@@ -112,9 +133,15 @@ namespace RealityProgrammer.UnityToolkit.Editors.Utility {
                 var elementType = type.GetElementType();
 
                 return IsSerializableByUnity(elementType);
+            } else if (type.IsGenericType && type.GetGenericTypeDefinition() == systemListGeneric) {
+                return IsSerializableByUnity(type.GetGenericArguments()[0]);
             }
 
-            return builtinSerializableTypes.Contains(type) || type.IsSubclassOf(unityEngineObjectType) || type == unityEngineObjectType || type.IsSerializable;
+            if (type.IsAbstract || typeType == type) {
+                return false;
+            }
+
+            return type.IsPrimitive || type == stringType || builtinSerializableTypes.Contains(type) || type.IsEnum || type.IsSubclassOf(unityEngineObjectType) || type == unityEngineObjectType || type.IsSerializable;
         }
     }
 }

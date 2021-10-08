@@ -7,7 +7,7 @@ using RealityProgrammer.UnityToolkit.Core.Components;
 using UnityEngine.Rendering;
 using RealityProgrammer.UnityToolkit.Core.Rendering;
 
-namespace RealityProgrammer.Editors {
+namespace RealityProgrammer.UnityToolkit.Editors {
     [CustomEditor(typeof(CachedMaterialCreator))]
     public class CachedMaterialCreatorEditor : Editor {
         SerializedProperty originalMaterial_Prop, materialKey_Prop, overrideIfExists_Prop, callMethod_Prop, propertyEntries_Prop;

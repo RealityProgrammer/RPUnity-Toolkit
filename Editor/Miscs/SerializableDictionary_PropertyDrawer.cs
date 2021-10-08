@@ -14,7 +14,7 @@ namespace RealityProgrammer.UnityToolkit.Editors.Miscs {
         private readonly Dictionary<string, bool> validate = new Dictionary<string, bool>();
 
         public void Validate(SerializedProperty property) {
-            var dictionary = RPEditorUtility.GetActualInstance(fieldInfo, property);
+            var dictionary = RPEditorUtility.GetActualInstance(property);
             var entriesField = dictionary.GetType().GetField("entries", BindingFlags.NonPublic | BindingFlags.Instance);
             var keyType = entriesField.FieldType.GetElementType().GetField("key", BindingFlags.Instance | BindingFlags.Public).FieldType;
 
@@ -26,10 +26,6 @@ namespace RealityProgrammer.UnityToolkit.Editors.Miscs {
         }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
-            if (!validate.TryGetValue(property.propertyPath, out bool valid)) {
-                Validate(property);
-            }
-
             if (validate[property.propertyPath]) {
                 position.height = EditorGUIUtility.singleLineHeight;
                 EditorGUI.LabelField(position, label);
@@ -42,8 +38,10 @@ namespace RealityProgrammer.UnityToolkit.Editors.Miscs {
         }
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label) {
-            if (!validate.TryGetValue(property.propertyPath, out bool valid)) {
+            if (!validate.ContainsKey(property.propertyPath)) {
                 Validate(property);
+
+                return EditorGUIUtility.singleLineHeight * 2 + EditorGUIUtility.standardVerticalSpacing;
             }
 
             if (validate[property.propertyPath]) {

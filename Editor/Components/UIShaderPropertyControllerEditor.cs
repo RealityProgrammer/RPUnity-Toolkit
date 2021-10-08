@@ -6,7 +6,7 @@ using UnityEditorInternal;
 using RealityProgrammer.UnityToolkit.Core.Components;
 using RealityProgrammer.UnityToolkit.Core.Rendering;
 
-namespace RealityProgrammer.Editors {
+namespace RealityProgrammer.UnityToolkit.Editors {
     [CustomEditor(typeof(UIShaderPropertyController))]
     public class UIShaderPropertyControllerEditor : Editor {
         private ReorderableList _reorderableList;

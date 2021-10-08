@@ -3,6 +3,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [1.2.4] - 2020-10-08
+### Fixed
+- Empty .meta files which trigger Unity warning message on package installation
+
+### Changed
+- Serializable Dictionary Window UI
+- Namespaces of editor classes
+
+### Added
+- 2 extra editor textures
+
 ## [1.2.3] - 2020-10-06
 ### Added
 - Custom Editors for certain Shader Property modification class

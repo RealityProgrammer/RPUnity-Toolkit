@@ -9,6 +9,16 @@ using RealityProgrammer.UnityToolkit.Editors.Windows;
 
 namespace RealityProgrammer.UnityToolkit.Editors.Miscs {
     public class SerializableDictionaryPairDisplayer {
+        static SerializableDictionaryPairDisplayer() {
+            GUIStyle variable = new GUIStyle {
+                border = new RectOffset(4, 4, 0, 4),
+            };
+            variable.normal.textColor = RPEditorUIUtility.GetDefaultTextColor();
+            variable.normal.background = Resources.Load<Texture2D>("Dark/SDPD_NormalBg");
+
+            RPEditorStyleStorage.RegisterStyle("SerializableDictionary.PairDisplayer.NormalBackground.Dark", variable);
+        }
+
         public class CachedReflectionProperties {
             private SerializableDictionaryPairDisplayer owner;
 
@@ -105,7 +115,7 @@ namespace RealityProgrammer.UnityToolkit.Editors.Miscs {
             _freeCountProperty = _dictionaryProperty.FindPropertyRelative("freeCount");
 
             _cached = new CachedReflectionProperties(this) {
-                actualDictionaryInstance = RPEditorUtility.GetActualInstance(fieldInfo, dictionary) as IDictionary,
+                actualDictionaryInstance = RPEditorUtility.GetActualInstance(dictionary) as IDictionary,
             };
             _cached.InitializeReflectionMembers();
         }
@@ -142,7 +152,7 @@ namespace RealityProgrammer.UnityToolkit.Editors.Miscs {
             rect.height += 2;
 
             if (Event.current.type == EventType.Repaint && total != 0) {
-                var bottomBackground = RPEditorUIStorage.AccessStyle("SerializableDictionary.PairDisplayer.NormalBackground.Dark");
+                var bottomBackground = RPEditorStyleStorage.AccessStyle("SerializableDictionary.PairDisplayer.NormalBackground.Dark");
                 bottomBackground.Draw(rect, false, false, false, false);
             }
 
@@ -231,6 +241,6 @@ namespace RealityProgrammer.UnityToolkit.Editors.Miscs {
             EditorGUILayout.LabelField(pageDisplay, style, GUILayout.Width(textSize));
         }
 
-        private int Count => _countProperty.intValue - _freeCountProperty.intValue;
+        public int Count => _countProperty.intValue - _freeCountProperty.intValue;
     }
 }

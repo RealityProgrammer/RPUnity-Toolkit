@@ -5,7 +5,7 @@ using UnityEngine.Rendering;
 using UnityEditor;
 using RealityProgrammer.UnityToolkit.Core.Rendering;
 
-namespace RealityProgrammer.Editors {
+namespace RealityProgrammer.UnityToolkit.Editors {
     [CustomPropertyDrawer(typeof(PropertyModifyEntry))]
     public class PropertyModifyEntry_PropDrawer : PropertyDrawer {
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {

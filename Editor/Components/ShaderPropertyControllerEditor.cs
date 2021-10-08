@@ -5,7 +5,7 @@ using UnityEditorInternal;
 using System.Linq;
 using RealityProgrammer.UnityToolkit.Core.Rendering;
 
-namespace RealityProgrammer.Editors {
+namespace RealityProgrammer.UnityToolkit.Editors {
     [CustomEditor(typeof(ShaderPropertyController))]
     public class ShaderPropertyControllerEditor : Editor {
         private ReorderableList _reorderableList;

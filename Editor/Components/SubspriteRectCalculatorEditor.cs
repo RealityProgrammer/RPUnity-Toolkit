@@ -5,7 +5,7 @@ using UnityEditor;
 using RealityProgrammer.UnityToolkit.Core.Rendering;
 using UnityEngine.Rendering;
 
-namespace RealityProgrammer.Editors {
+namespace RealityProgrammer.UnityToolkit.Editors {
     [CustomEditor(typeof(SubspriteRectCalculator))]
     public class SubspriteRectCalculatorEditor : Editor {
         SerializedProperty propertyNameProp;

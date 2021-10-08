@@ -12,6 +12,48 @@ using RealityProgrammer.CSStandard.Interpreter;
 
 namespace RealityProgrammer.UnityToolkit.Editors.Miscs {
     public class SerializableDictionaryControlPanel {
+        static SerializableDictionaryControlPanel() {
+            GUIStyle variable = new GUIStyle() {
+                border = new RectOffset(1, 1, 10, 10),
+                padding = new RectOffset(3, 3, 1, 1),
+            };
+
+            variable.normal.textColor = RPEditorUIUtility.GetDefaultTextColor();
+            variable.normal.background = Resources.Load<Texture2D>("Dark/SDCP_NormalBgHeader");
+            RPEditorStyleStorage.RegisterStyle("SerializableDictionary.ControlPanel.BackgroundHeader.Dark", variable);
+
+            variable = new GUIStyle(RPEditorStyleStorage.AccessStyle("SerializableDictionary.ControlPanel.BackgroundHeader.Dark"));
+            variable.padding.top = 4;
+            variable.padding.bottom = 4;
+            variable.hover.background = Resources.Load<Texture2D>("Dark/SDCP_HoverBgHeader");
+
+            variable.hover.textColor = RPEditorUIUtility.GetDefaultTextColor();
+            variable.active.background = Resources.Load<Texture2D>("Dark/SDCP_HoldBgHeader");
+            variable.active.textColor = RPEditorUIUtility.GetDefaultTextColor();
+            variable.fontStyle = FontStyle.Bold;
+
+            RPEditorStyleStorage.RegisterStyle("SerializableDictionary.ControlPanel.BackgroundHeader.Dark.Button0", variable);
+
+            variable = new GUIStyle {
+                border = new RectOffset(1, 1, 0, 1),
+            };
+            variable.normal.textColor = RPEditorUIUtility.GetDefaultTextColor();
+            variable.normal.background = Resources.Load<Texture2D>("Dark/SDCP_NormalBgBottom");
+
+            RPEditorStyleStorage.RegisterStyle("SerializableDictionary.ControlPanel.BackgroundBottom.Dark", variable);
+
+            variable = new GUIStyle() {
+                border = new RectOffset(2, 2, 2, 2),
+                fixedWidth = 10,
+                fixedHeight = 10,
+            };
+
+            variable.normal.background = Resources.Load<Texture2D>("Dark/Searchbar_NormalCancelButton");
+            variable.hover.background = Resources.Load<Texture2D>("Dark/Searchbar_HoverCancelButton");
+
+            RPEditorStyleStorage.RegisterStyle("SerializableDictionary.ControlPanel.Searchbar.CancelButton.Dark", variable);
+        }
+
         public class CachedReflectionProperties {
             public IDictionary actualDictionaryInstance;
 
@@ -65,10 +107,13 @@ namespace RealityProgrammer.UnityToolkit.Editors.Miscs {
             _candidateValueProperty = _dictionaryProperty.FindPropertyRelative("_candidateValue");
 
             panelFoldout = new AnimBool(true);
+            panelFoldout.valueChanged.AddListener(() => {
+                SerializableDictionaryWindow.WindowInstance.Repaint();
+            });
 
             _cached = new CachedReflectionProperties {
                 fieldInfo = fieldInfo,
-                actualDictionaryInstance = RPEditorUtility.GetActualInstance<IDictionary>(fieldInfo, _dictionaryProperty),
+                actualDictionaryInstance = RPEditorUtility.GetActualInstance<IDictionary>(_dictionaryProperty),
             };
             _cached.InitializeReflectionMembers();
 
@@ -86,17 +131,24 @@ namespace RealityProgrammer.UnityToolkit.Editors.Miscs {
         string searchString;
 
         public void DrawLayout() {
-            var style = RPEditorUIStorage.AccessStyle("SerializableDictionary.ControlPanel.BackgroundHeader.Dark.Button0");
+            var style = RPEditorStyleStorage.AccessStyle("SerializableDictionary.ControlPanel.BackgroundHeader.Dark.Button0");
             var label = new GUIContent(ObjectNames.NicifyVariableName(SerializableDictionaryWindow.WindowInstance.DictionaryProperty.displayName) + " - Control Panel");
 
             if (GUILayout.Button(label, style, GUILayout.Height(24))) {
                 panelFoldout.target = !panelFoldout.value;
             }
 
+            var entryCount = SerializableDictionaryWindow.WindowInstance.Displayer.Count;
+            var entryDisplayContent = new GUIContent(entryCount + " Item" + (entryCount != 1 ? "s" : ""));
+            var size = EditorStyles.label.CalcSize(entryDisplayContent);
+            var lastRect = GUILayoutUtility.GetLastRect();
+
+            EditorGUI.LabelField(new Rect(lastRect.x + lastRect.width - size.x - 7, lastRect.y, size.x, lastRect.height), entryDisplayContent);
+
             EditorGUILayout.BeginFadeGroup(panelFoldout.faded);
 
             if (panelFoldout.faded > 0.001f) {
-                var bottomBackground = RPEditorUIStorage.AccessStyle("SerializableDictionary.ControlPanel.BackgroundBottom.Dark");
+                var bottomBackground = RPEditorStyleStorage.AccessStyle("SerializableDictionary.ControlPanel.BackgroundBottom.Dark");
                 var bottomRect = EditorGUILayout.BeginVertical();
 
                 if (Event.current.type == EventType.Repaint) {
@@ -146,25 +198,15 @@ namespace RealityProgrammer.UnityToolkit.Editors.Miscs {
                         break;
 
                     case ControlMode.Search:
-                        EditorGUILayout.LabelField(new GUIContent("Search Keys", "Search for keys based on expressions\nKeywords:\n  1. __iterator__: current iterating entry.\n  2. __iteratorIndex__: the index of current iterating entry."), EditorStyles.boldLabel);
+                        EditorGUILayout.LabelField(new GUIContent("Search Query", "Search for keys based on search program/query\nKeywords:\n  1. __iterator__: current iterating entry.\n  2. __iteratorIndex__: the index of current iterating entry.\nThe program can be created like default C# program, as long as the final result is boolean type.\nEx: __iterator__.IntegerValue > 4"), EditorStyles.boldLabel);
                         EditorGUILayout.BeginHorizontal();
 
                         GUILayout.Space(5);
 
-                        //EditorGUI.BeginChangeCheck();
                         searchString = GUILayout.TextField(searchString, GUI.skin.FindStyle("ToolbarSeachTextField"));
-                        //if (EditorGUI.EndChangeCheck()) {
-                        //    try {
-                        //        SerializableDictionaryWindow.WindowInstance.SearchInterpreter.InitializeProgram(searchString);
-                        //        SerializableDictionaryWindow.WindowInstance.SearchInterpreter.Lexing();
+                        EditorGUIUtility.AddCursorRect(GUILayoutUtility.GetLastRect(), MouseCursor.Text);
 
-                        //        SerializableDictionaryWindow.WindowInstance.Displayer._cached.RefreshIndexLookupList();
-                        //    } catch (Exception e) {
-                        //        Debug.LogWarning(e.GetType().Name + ": " + e.Message);
-                        //    }
-                        //}
-
-                        var buttonStyle = RPEditorUIStorage.AccessStyle("SerializableDictionary.ControlPanel.Searchbar.CancelButton.Dark");
+                        var buttonStyle = RPEditorStyleStorage.AccessStyle("SerializableDictionary.ControlPanel.Searchbar.CancelButton.Dark");
 
                         EditorGUILayout.BeginVertical(GUILayout.Width(12), GUILayout.Height(18));
                         GUILayout.FlexibleSpace();
