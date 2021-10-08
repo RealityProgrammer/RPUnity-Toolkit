@@ -15,6 +15,8 @@ namespace RealityProgrammer.UnityToolkit.Editors {
 
         UIShaderPropertyController inspectingTarget;
 
+        private static readonly GUIContent noProperty = new GUIContent("No Property");
+
         private void OnEnable() {
             inspectingTarget = (UIShaderPropertyController)target;
 
@@ -31,8 +33,12 @@ namespace RealityProgrammer.UnityToolkit.Editors {
                     Graphic renderer = matInst.RetrieveGraphic();
                     Shader shader = renderer.material.shader;
 
+                    bool isMenuEmpty = true;
                     for (int i = 0; i < shader.GetPropertyCount(); i++) {
                         string sPropName = shader.GetPropertyName(i);
+
+                        var flags = shader.GetPropertyFlags(i);
+                        if (!((flags & ShaderPropertyFlags.PerRendererData) == ShaderPropertyFlags.PerRendererData)) continue;
 
                         bool exists = false;
                         for (int j = 0; j < inspectingTarget.entries.Length; j++) {
@@ -41,6 +47,8 @@ namespace RealityProgrammer.UnityToolkit.Editors {
                                 break;
                             }
                         }
+
+                        isMenuEmpty = false;
 
                         if (!exists) {
                             int _i = i;
@@ -76,6 +84,10 @@ namespace RealityProgrammer.UnityToolkit.Editors {
                         } else {
                             menu.AddDisabledItem(new GUIContent(sPropName));
                         }
+                    }
+
+                    if (isMenuEmpty) {
+                        menu.AddDisabledItem(noProperty);
                     }
 
                     menu.ShowAsContext();

@@ -34,9 +34,9 @@ namespace RealityProgrammer.UnityToolkit.Editors {
                     bool isMenuEmpty = true;
                     for (int i = 0; i < shader.GetPropertyCount(); i++) {
                         string sPropName = shader.GetPropertyName(i);
-                        var attributes = shader.GetPropertyAttributes(i);
+                        var flags = shader.GetPropertyFlags(i);
 
-                        if (!attributes.Contains("PerRendererData")) continue;
+                        if (!((flags & ShaderPropertyFlags.PerRendererData) == ShaderPropertyFlags.PerRendererData)) continue;
 
                         bool exists = false;
                         for (int j = 0; j < inspectingTarget.entries.Length; j++) {
@@ -48,9 +48,9 @@ namespace RealityProgrammer.UnityToolkit.Editors {
 
                         if (!exists) {
                             int _i = i;
-                            menu.AddItem(new GUIContent(sPropName), false, () => {
-                                isMenuEmpty = false;
+                            isMenuEmpty = false;
 
+                            menu.AddItem(new GUIContent(sPropName), false, () => {
                                 ShaderPropertyType shaderPropertyType = shader.GetPropertyType(_i);
 
                                 int index = list.serializedProperty.arraySize;

@@ -3,6 +3,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [1.2.5] - 2020-10-08
+### Fixed
+- ShaderPropertyModifier problem which doesn't check correct attribute
+
+### Changed
+- Increase performance of Serializable Dictionary Window
+
 ## [1.2.4] - 2020-10-08
 ### Fixed
 - Empty .meta files which trigger Unity warning message on package installation
