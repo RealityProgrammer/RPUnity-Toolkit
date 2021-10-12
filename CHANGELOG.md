@@ -3,6 +3,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [1.3.0] - 2020-10-12
+### Added
+- State Machine class
+- Collider2D Physics Checker (with custom Editor)
+- Scene Loader
+
+### Fixed
+- Incorrect serialization layout of Serializable Dictionary, caused by candidates
+
 ## [1.2.5] - 2020-10-08
 ### Fixed
 - ShaderPropertyModifier problem which doesn't check correct attribute

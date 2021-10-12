@@ -46,9 +46,10 @@ namespace RealityProgrammer.UnityToolkit.Editors {
                             }
                         }
 
+                        isMenuEmpty = false;
+
                         if (!exists) {
                             int _i = i;
-                            isMenuEmpty = false;
 
                             menu.AddItem(new GUIContent(sPropName), false, () => {
                                 ShaderPropertyType shaderPropertyType = shader.GetPropertyType(_i);
@@ -80,7 +81,6 @@ namespace RealityProgrammer.UnityToolkit.Editors {
                                 serializedObject.ApplyModifiedProperties();
                             });
                         } else {
-                            isMenuEmpty = false;
                             menu.AddDisabledItem(new GUIContent(sPropName));
                         }
                     }

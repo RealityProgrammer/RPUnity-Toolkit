@@ -26,11 +26,11 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
         [NonSerialized] private ValueCollection values;
         private object _syncRoot;
 
-#if UNITY_EDITOR
 #pragma warning disable IDE0051
         [SerializeField] private TKey _candidateKey;
         [SerializeField] private TValue _candidateValue;
 
+#if UNITY_EDITOR
         private void AddCandidate() {
             Add(_candidateKey, _candidateValue);
         }
@@ -77,8 +77,8 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
 
             return ret;
         }
-#pragma warning restore IDE0051
 #endif
+#pragma warning restore IDE0051
 
         // constants for serialization
         private const string VersionName = "Version";

@@ -20,7 +20,7 @@ namespace RealityProgrammer.UnityToolkit.Core.Utility {
         }
 
         public static SRandom InitializeRandomizer() {
-            return GetRandomizer(System.Environment.TickCount);
+            return GetRandomizer(Environment.TickCount);
         }
 
         public static Vector2 Rotate(this Vector2 v, float degrees) {
@@ -34,8 +34,6 @@ namespace RealityProgrammer.UnityToolkit.Core.Utility {
             return v;
         }
 
-        public static Vector2 Rotate(this Vector2 v, Vector2 center, float degrees) => center + (v - center).Rotate(degrees);
-
         public static Vector2 RotatePreCompute(this Vector2 v, float cos, float sin) {
             float tx = v.x;
             float ty = v.y;
@@ -44,15 +42,23 @@ namespace RealityProgrammer.UnityToolkit.Core.Utility {
             return v;
         }
 
-        public static float NextFloat(this System.Random random) {
+        public static Vector2 Rotate(this Vector2 v, Vector2 center, float degrees) {
+            return center + (v - center).Rotate(degrees);
+        }
+
+        public static Vector2 RotatePreCompute(this Vector2 v, Vector2 center, float cos, float sin) {
+            return center + (v - center).RotatePreCompute(cos, sin);
+        }
+
+        public static float NextFloat(this SRandom random) {
             double mantissa = (random.NextDouble() * 2.0) - 1.0;
-            // choose -149 instead of -126 to also generate subnormal floats (*)
+
             double exponent = Math.Pow(2.0, random.Next(-126, 128));
             return (float)(mantissa * exponent);
         }
 
-        public static float NextFloat(this System.Random random, float min, float max) {
-            return min + (float)random.NextDouble() * (max - min);
+        public static float NextFloat(this SRandom random, float min, float max) {
+            return min + (float)(random.NextDouble() * (max - min));
         }
 
         public static bool PointInsideTriangle(Vector2 p, Vector2 p0, Vector2 p1, Vector2 p2) {
@@ -104,6 +110,24 @@ namespace RealityProgrammer.UnityToolkit.Core.Utility {
             Vector3 point = center + new Vector3(-size.x / 2 + (float)(randomizer.NextDouble() * size.x), -size.y / 2 + (float)(randomizer.NextDouble() * size.y), -size.z / 2 + (float)(randomizer.NextDouble() * size.z));
 
             return center + rotation * (point - center);
+        }
+
+        public static Vector2 UniformRandomInsideCircle(int? seed) {
+            var randomizer = seed.HasValue ? GetRandomizer(seed.Value) : InitializeRandomizer();
+
+            float angle = (float)(2 * Math.PI * randomizer.NextDouble());
+            float r = (float)Math.Sqrt(randomizer.NextFloat());
+
+            return new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * r;
+        }
+
+        public static Vector2 UniformRandomInsideCircle(Vector2 center, float radius, int? seed) {
+            var randomizer = seed.HasValue ? GetRandomizer(seed.Value) : InitializeRandomizer();
+
+            float angle = (float)(2 * Math.PI * randomizer.NextDouble());
+            float r = (float)Math.Sqrt(randomizer.NextFloat() * radius);
+
+            return center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * r;
         }
 
         public static Texture2D[] SplitColorChannels(Texture2D original) {
@@ -175,36 +199,37 @@ namespace RealityProgrammer.UnityToolkit.Core.Utility {
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Fractional(float x) {
-            float ax = Math.Abs(x);
-
-            return ax - Mathf.Floor(ax);
+            return x % 1;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 Fractional(Vector2 vec) {
-            float ax = Math.Abs(vec.x);
-            float ay = Math.Abs(vec.y);
-
-            return new Vector2(ax - Mathf.Floor(ax), ay - Mathf.Floor(ay));
+            return new Vector2(vec.x % 1, vec.y % 1);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Fractional(Vector3 vec) {
-            float ax = Math.Abs(vec.x);
-            float ay = Math.Abs(vec.y);
-            float az = Math.Abs(vec.z);
-
-            return new Vector3(ax - Mathf.Floor(ax), ay - Mathf.Floor(ay), az - Mathf.Floor(az));
+            return new Vector3(vec.x % 1, vec.y % 1, vec.z % 1);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Fractional(Vector4 vec) {
-            float ax = Math.Abs(vec.x);
-            float ay = Math.Abs(vec.y);
-            float az = Math.Abs(vec.z);
-            float aw = Math.Abs(vec.w);
+            return new Vector4(vec.x % 1, vec.y % 1, vec.z % 1, vec.w % 1);
+        }
 
-            return new Vector4(ax - Mathf.Floor(ax), ay - Mathf.Floor(ay), az - Mathf.Floor(az), aw - Mathf.Floor(aw));
+        public static Vector2 NormalizeAndGetLength(this Vector2 v, out float magnitude) {
+            magnitude = v.magnitude;
+            return v / magnitude;
+        }
+
+        public static Vector3 NormalizeAndGetLength(this Vector3 v, out float magnitude) {
+            magnitude = v.magnitude;
+            return v / magnitude;
+        }
+
+        public static Vector4 NormalizeAndGetLength(this Vector4 v, out float magnitude) {
+            magnitude = v.magnitude;
+            return v / magnitude;
         }
 
         public const uint TotalNumberOfHashCalculation = 1;
