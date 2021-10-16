@@ -4,21 +4,19 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.Callbacks;
-using RealityProgrammer.UnityToolkit.Editors.Miscs;
 using RealityProgrammer.CSStandard.Interpreter;
-using RealityProgrammer.UnityToolkit.Editors.Utility;
 
-namespace RealityProgrammer.UnityToolkit.Editors.Windows {
-    public sealed class SerializableDictionaryWindow : EditorWindow {
+namespace RealityProgrammer.UnityToolkit.Editors.Windows.SerializableDictionary {
+    internal class SerializableDictionaryWindow : EditorWindow {
         public static readonly Vector2Int DisplayAmountRange = new Vector2Int(5, 15);
 
         public static SerializableDictionaryWindow WindowInstance { get; private set; }
 
-        public SerializedProperty DictionaryProperty { get; private set; }
+        public SerializedProperty DictionaryProperty { get; protected set; }
 
-        public ConditionalSearchInterpreter SearchInterpreter { get; private set; }
-        public SerializableDictionaryControlPanel ControlPanel { get; private set; }
-        public SerializableDictionaryPairDisplayer Displayer { get; private set; }
+        public ConditionalSearchInterpreter SearchInterpreter { get; protected set; }
+        public SerializableDictionaryControlPanel ControlPanel { get; protected set; }
+        public SerializableDictionaryPairDisplayer Displayer { get; protected set; }
 
         public static void InitializeWindow(SerializedProperty original, FieldInfo fieldInfo) {
             WindowInstance = GetWindow<SerializableDictionaryWindow>();
@@ -29,20 +27,26 @@ namespace RealityProgrammer.UnityToolkit.Editors.Windows {
             WindowInstance.Initialize(original, fieldInfo);
         }
 
-        private void Initialize(SerializedProperty original, FieldInfo field) {
+        protected virtual void Initialize(SerializedProperty original, FieldInfo field) {
             DictionaryProperty = original;
 
             ControlPanel = new SerializableDictionaryControlPanel(original, field);
             Displayer = new SerializableDictionaryPairDisplayer(original, field);
             SearchInterpreter = new ConditionalSearchInterpreter();
 
-            ControlPanel.Initialize();
+            wantsMouseMove = true;
+
             Displayer.Initialize();
         }
 
         Vector2 scrollViewPosition;
-        private void OnGUI() {
+        protected virtual void OnGUI() {
             if (DictionaryProperty == null) {
+                Close();
+                return;
+            }
+
+            if (DictionaryProperty.serializedObject == null) {
                 Close();
                 return;
             }
@@ -59,8 +63,8 @@ namespace RealityProgrammer.UnityToolkit.Editors.Windows {
             DictionaryProperty.serializedObject.ApplyModifiedProperties();
         }
 
-        private void Update() {
-            Repaint();
+        protected virtual void OnDestroy() {
+            ControlPanel.CloseWindow();
         }
     }
 }

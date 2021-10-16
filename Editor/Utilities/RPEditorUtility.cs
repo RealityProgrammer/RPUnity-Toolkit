@@ -8,6 +8,15 @@ using System.Reflection;
 
 namespace RealityProgrammer.UnityToolkit.Editors.Utility {
     public static class RPEditorUtility {
+        private static Func<Type, Type> _getPropertyDrawerType;
+
+        static RPEditorUtility() {
+            var internalClass = Type.GetType("UnityEditor.ScriptAttributeUtility,UnityEditor");
+            var method = internalClass.GetMethod("GetDrawerTypeForType", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+
+            _getPropertyDrawerType = (Func<Type, Type>)method.CreateDelegate(typeof(Func<Type, Type>));
+        }
+
         public static SerializedProperty FindNestedPropertyRelative(this SerializedObject serializedObject, string path, char seperator = '.') {
             string[] tokens = path.Split(seperator);
 
@@ -142,6 +151,73 @@ namespace RealityProgrammer.UnityToolkit.Editors.Utility {
             }
 
             return type.IsPrimitive || type == stringType || builtinSerializableTypes.Contains(type) || type.IsEnum || type.IsSubclassOf(unityEngineObjectType) || type == unityEngineObjectType || type.IsSerializable;
+        }
+
+        private struct AutoPropertyDrawerParameters {
+            internal Rect position;
+            internal GUIContent content;
+            internal object input;
+        }
+        private delegate object AutoPropertyDrawer(AutoPropertyDrawerParameters parameters);
+
+        private static readonly Dictionary<Type, AutoPropertyDrawer> _autoPropertyDrawer = new Dictionary<Type, AutoPropertyDrawer>() {
+            [typeof(int)] = (parameters) => EditorGUI.IntField(parameters.position, parameters.content, (int)parameters.input),
+            [typeof(float)] = (parameters) => EditorGUI.FloatField(parameters.position, parameters.content, (float)parameters.input),
+            [typeof(long)] = (parameters) => EditorGUI.LongField(parameters.position, parameters.content, (long)parameters.input),
+            [typeof(double)] = (parameters) => EditorGUI.DoubleField(parameters.position, parameters.content, (long)parameters.input),
+            [typeof(string)] = (parameters) => EditorGUI.TextField(parameters.position, parameters.content, (string)parameters.input),
+            [typeof(char)] = (parameters) => {
+                var t = EditorGUI.TextField(parameters.position, parameters.content, ((char)parameters.input).ToString());
+                if (string.IsNullOrEmpty(t)) return '\0';
+
+                return t[0];
+            },
+            [typeof(uint)] = (parameters) => (uint)EditorGUI.LongField(parameters.position, parameters.content, (uint)parameters.input),
+            [typeof(byte)] = (parameters) => (byte)EditorGUI.IntField(parameters.position, parameters.content, (byte)parameters.input),
+            [typeof(sbyte)] = (parameters) => (sbyte)EditorGUI.IntField(parameters.position, parameters.content, (sbyte)parameters.input),
+            [typeof(bool)] = (parameters) => EditorGUI.Toggle(parameters.position, parameters.content, (bool)parameters.input),
+            [typeof(short)] = (parameters) => (short)EditorGUI.IntField(parameters.position, parameters.content, (short)parameters.input),
+            [typeof(ushort)] = (parameters) => (ushort)EditorGUI.IntField(parameters.position, parameters.content, (ushort)parameters.input),
+
+            [typeof(Vector2)] = (parameters) => EditorGUI.Vector2Field(parameters.position, parameters.content, (Vector2)parameters.input),
+            [typeof(Vector2Int)] = (parameters) => EditorGUI.Vector2IntField(parameters.position, parameters.content, (Vector2Int)parameters.input),
+            [typeof(Vector3)] = (parameters) => EditorGUI.Vector3Field(parameters.position, parameters.content, (Vector3)parameters.input),
+            [typeof(Vector3Int)] = (parameters) => EditorGUI.Vector3IntField(parameters.position, parameters.content, (Vector3Int)parameters.input),
+            [typeof(Vector4)] = (parameters) => EditorGUI.Vector4Field(parameters.position, parameters.content, (Vector4)parameters.input),
+            [typeof(Quaternion)] = (parameters) => {
+                Quaternion q = (Quaternion)parameters.input;
+                Vector4 v4 = EditorGUI.Vector4Field(parameters.position, parameters.content, new Vector4(q.x, q.y, q.z, q.w));
+
+                return new Quaternion(v4.x, v4.y, v4.z, v4.w);
+            },
+            [typeof(Rect)] = (parameters) => EditorGUI.RectField(parameters.position, parameters.content, (Rect)parameters.input),
+            [typeof(RectInt)] = (parameters) => EditorGUI.RectIntField(parameters.position, parameters.content, (RectInt)parameters.input),
+            [typeof(Bounds)] = (parameters) => EditorGUI.BoundsField(parameters.position, parameters.content, (Bounds)parameters.input),
+            [typeof(BoundsInt)] = (parameters) => EditorGUI.BoundsIntField(parameters.position, parameters.content, (BoundsInt)parameters.input),
+            [typeof(Color)] = (parameters) => EditorGUI.ColorField(parameters.position, parameters.content, (Color)parameters.input),
+            [typeof(Color32)] = (parameters) => EditorGUI.ColorField(parameters.position, parameters.content, (Color32)parameters.input),
+            [typeof(LayerMask)] = (parameters) => EditorGUI.LayerField(parameters.position, parameters.content, (LayerMask)parameters.input),
+            [typeof(AnimationCurve)] = (parameters) => EditorGUI.CurveField(parameters.position, parameters.content, (AnimationCurve)parameters.input),
+            [typeof(Gradient)] = (parameters) => EditorGUI.GradientField(parameters.position, parameters.content, (Gradient)parameters.input),
+        };
+
+        internal static bool AutoPropertyField(Rect rect, GUIContent content, object input, out object output) {
+            if (input == null) {
+                output = null;
+                return false;
+            }
+
+            if (_autoPropertyDrawer.TryGetValue(input.GetType(), out var drawer)) {
+                var parameters = new AutoPropertyDrawerParameters() {
+                    position = rect, content = content, input = input,
+                };
+
+                output = drawer(parameters);
+                return true;
+            }
+
+            output = null;
+            return false;
         }
     }
 }

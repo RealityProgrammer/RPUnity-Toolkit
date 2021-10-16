@@ -3,6 +3,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [1.4.0] - 2020-10-16
+### Added
+- Serializable HashSet with fancy UI (with BitHelper class that internally used by HashSet)
+- MiscellaneousUtilities.cs (keep some extension methods related to C# standard library classes and more)
+
+### Changed
+- Modified code of Serializable Dictionary Window, now cut off useless Repaint draw and Reflection calls, thus increase performance
+- Change location of built-in editor resources
+
 ## [1.3.0] - 2020-10-12
 ### Added
 - State Machine class

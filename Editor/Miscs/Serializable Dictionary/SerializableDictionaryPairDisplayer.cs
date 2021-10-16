@@ -5,34 +5,19 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using RealityProgrammer.UnityToolkit.Editors.Utility;
+using RealityProgrammer.UnityToolkit.Core.Utility;
 using RealityProgrammer.UnityToolkit.Editors.Windows;
 
-namespace RealityProgrammer.UnityToolkit.Editors.Miscs {
-    public class SerializableDictionaryPairDisplayer {
-        static SerializableDictionaryPairDisplayer() {
-            GUIStyle variable = new GUIStyle {
-                border = new RectOffset(4, 4, 0, 4),
-            };
-            variable.normal.textColor = RPEditorUIUtility.GetDefaultTextColor();
-            variable.normal.background = Resources.Load<Texture2D>("Dark/SDPD_NormalBg");
-
-            RPEditorStyleStorage.RegisterStyle("SerializableDictionary.PairDisplayer.NormalBackground.Dark", variable);
-        }
-
-        public class CachedReflectionProperties {
-            private SerializableDictionaryPairDisplayer owner;
-
-            public CachedReflectionProperties(SerializableDictionaryPairDisplayer owner) {
-                this.owner = owner;
-            }
-
+namespace RealityProgrammer.UnityToolkit.Editors.Windows.SerializableDictionary {
+    internal class SerializableDictionaryPairDisplayer {
+        internal class CachedReflectionProperties {
             public IDictionary actualDictionaryInstance;
 
             public FieldInfo fieldInfo;
 
             public Type[] dictionaryGenericTypes;
 
-            public MethodInfo removeKeyMethod, getIndexLookupListMethod, getKeyLookupArrayMethod;
+            public MethodInfo removeKeyMethod, getIndexLookupListMethod, getKeyLookupListMethod;
 
             public List<int> indexLookupList;
             public List<object> keyLookupArray;
@@ -48,19 +33,17 @@ namespace RealityProgrammer.UnityToolkit.Editors.Miscs {
 
                 removeKeyMethod = type.GetMethod("Remove", BindingFlags.Instance | BindingFlags.Public, Type.DefaultBinder, new Type[1] { dictionaryGenericTypes[0] }, null);
                 getIndexLookupListMethod = type.GetMethod("GetIndexLookupList", BindingFlags.Instance | BindingFlags.NonPublic, Type.DefaultBinder, Type.EmptyTypes, null);
-                getKeyLookupArrayMethod = type.GetMethod("GetKeyLookupArray", BindingFlags.Instance | BindingFlags.NonPublic, Type.DefaultBinder, Type.EmptyTypes, null);
+                getKeyLookupListMethod = type.GetMethod("GetKeyLookupList", BindingFlags.Instance | BindingFlags.NonPublic, Type.DefaultBinder, Type.EmptyTypes, null);
             }
 
             public void RefreshIndexLookupList() {
                 indexLookupList = (List<int>)getIndexLookupListMethod.Invoke(actualDictionaryInstance, null);
-                keyLookupArray = (List<object>)getKeyLookupArrayMethod.Invoke(actualDictionaryInstance, null);
+                keyLookupArray = (List<object>)getKeyLookupListMethod.Invoke(actualDictionaryInstance, null);
 
                 var interpreter = SerializableDictionaryWindow.WindowInstance.SearchInterpreter;
 
                 if (interpreter.IsValid) {
                     List<int> removeEntries = new List<int>();
-
-                    SerializableDictionaryWindow.WindowInstance.SearchInterpreter.InitializeProgram("__iterator__ >= 3");
 
                     for (int i = 0; i < keyLookupArray.Count; i++) {
                         bool qualify = SerializableDictionaryWindow.WindowInstance.SearchInterpreter.CheckQualify(keyLookupArray[i], i, null);
@@ -70,24 +53,8 @@ namespace RealityProgrammer.UnityToolkit.Editors.Miscs {
                         }
                     }
 
-                    if (removeEntries.Count != 0) {
-                        int indexToRemove = 0;
-                        int newIdx = 0;
-
-                        for (int originalIdx = 0; originalIdx < indexLookupList.Count; originalIdx++) {
-                            if (indexToRemove < removeEntries.Count && removeEntries[indexToRemove] == originalIdx) {
-                                indexToRemove++;
-                            } else {
-                                int increment = newIdx++;
-
-                                indexLookupList[increment] = indexLookupList[originalIdx];
-                                keyLookupArray[increment] = keyLookupArray[originalIdx];
-                            }
-                        }
-
-                        indexLookupList.RemoveRange(newIdx, indexLookupList.Count - newIdx);
-                        keyLookupArray.RemoveRange(newIdx, keyLookupArray.Count - newIdx);
-                    }
+                    indexLookupList.RemoveAtIndices(removeEntries);
+                    keyLookupArray.RemoveAtIndices(removeEntries);
                 }
             }
         }
@@ -114,7 +81,7 @@ namespace RealityProgrammer.UnityToolkit.Editors.Miscs {
             _countProperty = _dictionaryProperty.FindPropertyRelative("count");
             _freeCountProperty = _dictionaryProperty.FindPropertyRelative("freeCount");
 
-            _cached = new CachedReflectionProperties(this) {
+            _cached = new CachedReflectionProperties() {
                 actualDictionaryInstance = RPEditorUtility.GetActualInstance(dictionary) as IDictionary,
             };
             _cached.InitializeReflectionMembers();
@@ -133,9 +100,6 @@ namespace RealityProgrammer.UnityToolkit.Editors.Miscs {
         private object removeKey; // Prevent NRE
 
         public void DrawDisplayLayout() {
-            _dictionaryProperty.serializedObject.Update();
-
-            //int total = Count;
             int total = _cached.keyLookupArray.Count;
             int pageCount = total / DisplayAmountPerPage + Math.Sign(total % DisplayAmountPerPage / (float)DisplayAmountPerPage);
 
@@ -152,7 +116,7 @@ namespace RealityProgrammer.UnityToolkit.Editors.Miscs {
             rect.height += 2;
 
             if (Event.current.type == EventType.Repaint && total != 0) {
-                var bottomBackground = RPEditorStyleStorage.AccessStyle("SerializableDictionary.PairDisplayer.NormalBackground.Dark");
+                var bottomBackground = RPEditorStyleStorage.AccessStyle("BuiltIn.Dark.Background.CurveEndBackground_0");
                 bottomBackground.Draw(rect, false, false, false, false);
             }
 
@@ -220,10 +184,8 @@ namespace RealityProgrammer.UnityToolkit.Editors.Miscs {
 
                 removeKey = null;
                 _cached.RefreshIndexLookupList();
-            }
 
-            if (EditorGUI.EndChangeCheck()) {
-                _dictionaryProperty.serializedObject.ApplyModifiedProperties();
+                SerializableDictionaryWindow.WindowInstance.ControlPanel.CheckContainsCandidate();
             }
         }
 

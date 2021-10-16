@@ -26,25 +26,30 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
         [NonSerialized] private ValueCollection values;
         private object _syncRoot;
 
-#pragma warning disable IDE0051
-        [SerializeField] private TKey _candidateKey;
-        [SerializeField] private TValue _candidateValue;
+        [SerializeField] internal TKey _candidateKey = default;
+        [SerializeField] internal TValue _candidateValue = default;
 
 #if UNITY_EDITOR
-        private void AddCandidate() {
+        internal void AddCandidate() {
             Add(_candidateKey, _candidateValue);
         }
 
-        private void ClearCandidate() {
+        private static readonly Type stringType = typeof(string);
+        internal void ClearCandidate() {
             _candidateValue = default;
-            _candidateKey = default;
+
+            if (_candidateKey.GetType() == stringType) {
+                _candidateKey = (TKey)(object)string.Empty;
+            } else {
+                _candidateKey = default;
+            }
         }
 
-        private bool ContainsCandidate() {
+        internal bool ContainsCandidate() {
             return ContainsKey(_candidateKey);
         }
 
-        private List<int> GetIndexLookupList() {
+        internal List<int> GetIndexLookupList() {
             List<int> ret = new List<int>(Count);
 
             int index = 0;
@@ -61,7 +66,7 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
             return ret;
         }
 
-        private List<object> GetKeyLookupArray() {
+        internal List<object> GetKeyLookupList() {
             List<object> ret = new List<object>(Count);
 
             int index = 0;
@@ -78,7 +83,6 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
             return ret;
         }
 #endif
-#pragma warning restore IDE0051
 
         // constants for serialization
         private const string VersionName = "Version";
@@ -94,7 +98,7 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
         public SerializableDictionary(IEqualityComparer<TKey> comparer) : this(0, comparer) { }
 
         public SerializableDictionary(int capacity, IEqualityComparer<TKey> comparer) {
-            if (capacity < 0) throw new ArgumentOutOfRangeException("Initialize capacity " + capacity + " was out of range");
+            if (capacity < 0) throw new ArgumentOutOfRangeException("capacity");
 
             Initialize(capacity);
 
@@ -107,7 +111,7 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
             this(dictionary != null ? dictionary.Count : 0, comparer) {
 
             if (dictionary == null) {
-                throw new ArgumentNullException("Expected dictionary was null");
+                throw new ArgumentNullException("dictionary");
             }
 
             foreach (KeyValuePair<TKey, TValue> pair in dictionary) {
@@ -235,11 +239,11 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
 
         private void CopyTo(KeyValuePair<TKey, TValue>[] array, int index) {
             if (array == null) {
-                throw new ArgumentNullException("Expected argument array was null");
+                throw new ArgumentNullException("array");
             }
 
             if (index < 0 || index > array.Length) {
-                throw new ArgumentOutOfRangeException("Index argument out of range");
+                throw new ArgumentOutOfRangeException("argument");
             }
 
             if (array.Length - index < Count) {
@@ -266,7 +270,7 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
         [System.Security.SecurityCritical]  // auto-generated_required
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context) {
             if (info == null) {
-                throw new ArgumentNullException("Expected argument info was null");
+                throw new ArgumentNullException("info");
             }
             info.AddValue(VersionName, version);
 
@@ -286,7 +290,7 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
 
         private int FindEntry(TKey key) {
             if (key == null) {
-                throw new ArgumentNullException("Expected argument key was null");
+                throw new ArgumentNullException("key");
             }
 
             if (buckets != null) {
@@ -312,7 +316,7 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
 
         private void Insert(TKey key, TValue value, bool add) {
             if (key == null) {
-                throw new ArgumentNullException("Expected argument keywas null");
+                throw new ArgumentNullException("key");
             }
 
             if (buckets == null) Initialize(0);
@@ -388,7 +392,7 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
 
         public bool Remove(TKey key) {
             if (key == null) {
-                throw new ArgumentNullException("Expected argument key was null");
+                throw new ArgumentNullException("key");
             }
 
             if (buckets != null) {
@@ -444,7 +448,7 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
 
         void ICollection.CopyTo(Array array, int index) {
             if (array == null) {
-                throw new ArgumentNullException("Expected argument array was null");
+                throw new ArgumentNullException("array");
             }
 
             if (array.Rank != 1) {
@@ -456,7 +460,7 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
             }
 
             if (index < 0 || index > array.Length) {
-                throw new ArgumentOutOfRangeException("Argument index out of range between 0 and array.Length");
+                throw new ArgumentOutOfRangeException("index");
             }
 
             if (array.Length - index < Count) {
@@ -539,7 +543,7 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
             }
             set {
                 if (key == null) {
-                    throw new ArgumentNullException("Expected argument key was null");
+                    throw new ArgumentNullException("key");
                 }
 
                 try {
@@ -557,14 +561,14 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
 
         private static bool IsCompatibleKey(object key) {
             if (key == null) {
-                throw new ArgumentNullException("Expected argument key was null");
+                throw new ArgumentNullException("key");
             }
             return (key is TKey);
         }
 
         void IDictionary.Add(object key, object value) {
             if (key == null) {
-                throw new ArgumentNullException("Expected argument key was null");
+                throw new ArgumentNullException("key");
             }
 
             try {
@@ -706,7 +710,7 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
 
             public KeyCollection(SerializableDictionary<TKey, TValue> dictionary) {
                 if (dictionary == null) {
-                    throw new ArgumentNullException("Expected argument dictionary is null");
+                    throw new ArgumentNullException("dictionary");
                 }
                 this.dictionary = dictionary;
             }
@@ -717,11 +721,11 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
 
             public void CopyTo(TKey[] array, int index) {
                 if (array == null) {
-                    throw new ArgumentNullException("Expected argument array is null");
+                    throw new ArgumentNullException("array");
                 }
 
                 if (index < 0 || index > array.Length) {
-                    throw new ArgumentOutOfRangeException("Argument index was out of range between 0 and array.Length");
+                    throw new ArgumentOutOfRangeException("index");
                 }
 
                 if (array.Length - index < dictionary.Count) {
@@ -769,7 +773,7 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
 
             void ICollection.CopyTo(Array array, int index) {
                 if (array == null) {
-                    throw new ArgumentNullException("Expected argument array is null");
+                    throw new ArgumentNullException("array");
                 }
 
                 if (array.Rank != 1) {
@@ -781,7 +785,7 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
                 }
 
                 if (index < 0 || index > array.Length) {
-                    throw new ArgumentOutOfRangeException("Argument index was out of range between 0 and array.Length");
+                    throw new ArgumentOutOfRangeException("index");
                 }
 
                 if (array.Length - index < dictionary.Count) {
@@ -886,7 +890,7 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
 
             public ValueCollection(SerializableDictionary<TKey, TValue> dictionary) {
                 if (dictionary == null) {
-                    throw new ArgumentNullException("Expected argument dictionary is null");
+                    throw new ArgumentNullException("dictionary");
                 }
                 this.dictionary = dictionary;
             }
@@ -897,11 +901,11 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
 
             public void CopyTo(TValue[] array, int index) {
                 if (array == null) {
-                    throw new ArgumentNullException("Expected argument array is null");
+                    throw new ArgumentNullException("array");
                 }
 
                 if (index < 0 || index > array.Length) {
-                    throw new ArgumentOutOfRangeException("Argument index out of range between 0 and array.Length");
+                    throw new ArgumentOutOfRangeException("index");
                 }
 
                 if (array.Length - index < Count) {
@@ -949,7 +953,7 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
 
             void ICollection.CopyTo(Array array, int index) {
                 if (array == null) {
-                    throw new ArgumentNullException("Expected argument array was null");
+                    throw new ArgumentNullException("array");
                 }
 
                 if (array.Rank != 1) {
@@ -961,7 +965,7 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
                 }
 
                 if (index < 0 || index > array.Length) {
-                    throw new ArgumentOutOfRangeException("Argument index out of range between 0 and array.Length");
+                    throw new ArgumentOutOfRangeException("index");
                 }
 
                 if (array.Length - index < Count) {
@@ -1055,120 +1059,6 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
                     index = 0;
                     currentValue = default;
                 }
-            }
-        }
-        public static class PrimeHelper {
-            public static readonly int[] Primes = new int[]
-            {
-            3,
-            7,
-            11,
-            17,
-            23,
-            29,
-            37,
-            47,
-            59,
-            71,
-            89,
-            107,
-            131,
-            163,
-            197,
-            239,
-            293,
-            353,
-            431,
-            521,
-            631,
-            761,
-            919,
-            1103,
-            1327,
-            1597,
-            1931,
-            2333,
-            2801,
-            3371,
-            4049,
-            4861,
-            5839,
-            7013,
-            8419,
-            10103,
-            12143,
-            14591,
-            17519,
-            21023,
-            25229,
-            30293,
-            36353,
-            43627,
-            52361,
-            62851,
-            75431,
-            90523,
-            108631,
-            130363,
-            156437,
-            187751,
-            225307,
-            270371,
-            324449,
-            389357,
-            467237,
-            560689,
-            672827,
-            807403,
-            968897,
-            1162687,
-            1395263,
-            1674319,
-            2009191,
-            2411033,
-            2893249,
-            3471899,
-            4166287,
-            4999559,
-            5999471,
-            7199369
-            };
-
-            public static bool IsPrime(int candidate) {
-                if ((candidate & 1) != 0) {
-                    int num = (int)Math.Sqrt((double)candidate);
-                    for (int i = 3; i <= num; i += 2) {
-                        if (candidate % i == 0) {
-                            return false;
-                        }
-                    }
-                    return true;
-                }
-                return candidate == 2;
-            }
-
-            public static int GetPrime(int min) {
-                if (min < 0)
-                    throw new ArgumentException("min < 0");
-
-                for (int i = 0; i < PrimeHelper.Primes.Length; i++) {
-                    int prime = PrimeHelper.Primes[i];
-                    if (prime >= min)
-                        return prime;
-                }
-                for (int i = min | 1; i < 2147483647; i += 2) {
-                    if (PrimeHelper.IsPrime(i) && (i - 1) % 101 != 0)
-                        return i;
-                }
-                return min;
-            }
-
-            public static int ExpandPrime(int oldSize) {
-                int num = 2 * oldSize;
-                if (num > 2146435069 && 2146435069 > oldSize) {
-                    return 2146435069;
-                }
-                return PrimeHelper.GetPrime(num);
             }
         }
     }

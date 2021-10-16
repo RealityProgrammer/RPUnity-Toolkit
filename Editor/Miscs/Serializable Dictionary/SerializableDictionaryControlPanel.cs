@@ -10,50 +10,8 @@ using RealityProgrammer.UnityToolkit.Editors.Windows;
 using RealityProgrammer.UnityToolkit.Editors.Utility;
 using RealityProgrammer.CSStandard.Interpreter;
 
-namespace RealityProgrammer.UnityToolkit.Editors.Miscs {
-    public class SerializableDictionaryControlPanel {
-        static SerializableDictionaryControlPanel() {
-            GUIStyle variable = new GUIStyle() {
-                border = new RectOffset(1, 1, 10, 10),
-                padding = new RectOffset(3, 3, 1, 1),
-            };
-
-            variable.normal.textColor = RPEditorUIUtility.GetDefaultTextColor();
-            variable.normal.background = Resources.Load<Texture2D>("Dark/SDCP_NormalBgHeader");
-            RPEditorStyleStorage.RegisterStyle("SerializableDictionary.ControlPanel.BackgroundHeader.Dark", variable);
-
-            variable = new GUIStyle(RPEditorStyleStorage.AccessStyle("SerializableDictionary.ControlPanel.BackgroundHeader.Dark"));
-            variable.padding.top = 4;
-            variable.padding.bottom = 4;
-            variable.hover.background = Resources.Load<Texture2D>("Dark/SDCP_HoverBgHeader");
-
-            variable.hover.textColor = RPEditorUIUtility.GetDefaultTextColor();
-            variable.active.background = Resources.Load<Texture2D>("Dark/SDCP_HoldBgHeader");
-            variable.active.textColor = RPEditorUIUtility.GetDefaultTextColor();
-            variable.fontStyle = FontStyle.Bold;
-
-            RPEditorStyleStorage.RegisterStyle("SerializableDictionary.ControlPanel.BackgroundHeader.Dark.Button0", variable);
-
-            variable = new GUIStyle {
-                border = new RectOffset(1, 1, 0, 1),
-            };
-            variable.normal.textColor = RPEditorUIUtility.GetDefaultTextColor();
-            variable.normal.background = Resources.Load<Texture2D>("Dark/SDCP_NormalBgBottom");
-
-            RPEditorStyleStorage.RegisterStyle("SerializableDictionary.ControlPanel.BackgroundBottom.Dark", variable);
-
-            variable = new GUIStyle() {
-                border = new RectOffset(2, 2, 2, 2),
-                fixedWidth = 10,
-                fixedHeight = 10,
-            };
-
-            variable.normal.background = Resources.Load<Texture2D>("Dark/Searchbar_NormalCancelButton");
-            variable.hover.background = Resources.Load<Texture2D>("Dark/Searchbar_HoverCancelButton");
-
-            RPEditorStyleStorage.RegisterStyle("SerializableDictionary.ControlPanel.Searchbar.CancelButton.Dark", variable);
-        }
-
+namespace RealityProgrammer.UnityToolkit.Editors.Windows.SerializableDictionary {
+    internal class SerializableDictionaryControlPanel {
         public class CachedReflectionProperties {
             public IDictionary actualDictionaryInstance;
 
@@ -93,15 +51,12 @@ namespace RealityProgrammer.UnityToolkit.Editors.Miscs {
 
         private readonly SerializedProperty _dictionaryProperty;
 
-        private readonly SerializedProperty _keysProperty, _valuesProperty;
         private readonly SerializedProperty _candidateKeyProperty, _candidateValueProperty;
 
         public Action<ControlMode> onControlModeChanged;
 
         public SerializableDictionaryControlPanel(SerializedProperty dictionary, FieldInfo fieldInfo) {
             _dictionaryProperty = dictionary;
-            _keysProperty = _dictionaryProperty.FindPropertyRelative("_Keys");
-            _valuesProperty = _dictionaryProperty.FindPropertyRelative("_Values");
 
             _candidateKeyProperty = _dictionaryProperty.FindPropertyRelative("_candidateKey");
             _candidateValueProperty = _dictionaryProperty.FindPropertyRelative("_candidateValue");
@@ -124,18 +79,35 @@ namespace RealityProgrammer.UnityToolkit.Editors.Miscs {
             };
         }
 
-        public void Initialize() {
-        }
-
         bool containsCandidate;
         string searchString;
 
-        public void DrawLayout() {
-            var style = RPEditorStyleStorage.AccessStyle("SerializableDictionary.ControlPanel.BackgroundHeader.Dark.Button0");
+        private int m_HeaderButtonID;
+        public void DoHeaderButton() {
+            var style = RPEditorStyleStorage.AccessStyle("BuiltIn.Dark.Button.DarkGradient_0");
             var label = new GUIContent(ObjectNames.NicifyVariableName(SerializableDictionaryWindow.WindowInstance.DictionaryProperty.displayName) + " - Control Panel");
+
+            var e = Event.current;
+            int id = GUIUtility.GetControlID(label, FocusType.Passive);
 
             if (GUILayout.Button(label, style, GUILayout.Height(24))) {
                 panelFoldout.target = !panelFoldout.value;
+            }
+
+            if (e.type == EventType.MouseMove) {
+                if (GUILayoutUtility.GetLastRect().Contains(e.mousePosition)) {
+                    if (m_HeaderButtonID != id) {
+                        m_HeaderButtonID = id;
+
+                        SerializableDictionaryWindow.WindowInstance.Repaint();
+                    }
+                } else {
+                    if (m_HeaderButtonID == id) {
+                        m_HeaderButtonID = 0;
+
+                        SerializableDictionaryWindow.WindowInstance.Repaint();
+                    }
+                }
             }
 
             var entryCount = SerializableDictionaryWindow.WindowInstance.Displayer.Count;
@@ -144,19 +116,24 @@ namespace RealityProgrammer.UnityToolkit.Editors.Miscs {
             var lastRect = GUILayoutUtility.GetLastRect();
 
             EditorGUI.LabelField(new Rect(lastRect.x + lastRect.width - size.x - 7, lastRect.y, size.x, lastRect.height), entryDisplayContent);
+        }
+
+        public void DrawLayout() {
+            DoHeaderButton();
 
             EditorGUILayout.BeginFadeGroup(panelFoldout.faded);
 
             if (panelFoldout.faded > 0.001f) {
-                var bottomBackground = RPEditorStyleStorage.AccessStyle("SerializableDictionary.ControlPanel.BackgroundBottom.Dark");
+                var bottomBackground = RPEditorStyleStorage.AccessStyle("BuiltIn.Dark.Background.BottomConnect_0");
                 var bottomRect = EditorGUILayout.BeginVertical();
 
                 if (Event.current.type == EventType.Repaint) {
                     bottomBackground.Draw(bottomRect, false, false, false, false);
                 }
+
                 GUILayout.Space(1);
 
-                var rect = EditorGUILayout.BeginHorizontal(GUILayout.ExpandWidth(true));
+                EditorGUILayout.BeginHorizontal(GUILayout.ExpandWidth(true));
                 GUILayout.FlexibleSpace();
                 if (GUILayout.Button(EditorGUIUtility.IconContent("_Popup"), GUI.skin.FindStyle("IconButton"))) {
                     GenericMenu menu = new GenericMenu();
@@ -168,7 +145,7 @@ namespace RealityProgrammer.UnityToolkit.Editors.Miscs {
                         }
                     });
 
-                    if (_cached.actualDictionaryInstance.Count != 0) {
+                    if (_cached.actualDictionaryInstance.Count > 5) {
                         menu.AddItem(new GUIContent("Search"), controlMode == ControlMode.Search, () => {
                             if (controlMode != ControlMode.Search) {
                                 controlMode = ControlMode.Search;
@@ -206,7 +183,7 @@ namespace RealityProgrammer.UnityToolkit.Editors.Miscs {
                         searchString = GUILayout.TextField(searchString, GUI.skin.FindStyle("ToolbarSeachTextField"));
                         EditorGUIUtility.AddCursorRect(GUILayoutUtility.GetLastRect(), MouseCursor.Text);
 
-                        var buttonStyle = RPEditorStyleStorage.AccessStyle("SerializableDictionary.ControlPanel.Searchbar.CancelButton.Dark");
+                        var buttonStyle = RPEditorStyleStorage.AccessStyle("BuiltIn.Dark.Button.SearchbarCancel");
 
                         EditorGUILayout.BeginVertical(GUILayout.Width(12), GUILayout.Height(18));
                         GUILayout.FlexibleSpace();
@@ -241,7 +218,7 @@ namespace RealityProgrammer.UnityToolkit.Editors.Miscs {
                         break;
 
                     case ControlMode.UI:
-                        SerializableDictionaryWindow.WindowInstance.Displayer.DisplayAmountPerPage = EditorGUILayout.IntSlider("Pair Display Amount", SerializableDictionaryWindow.WindowInstance.Displayer.DisplayAmountPerPage, 5, 15);
+                        SerializableDictionaryWindow.WindowInstance.Displayer.DisplayAmountPerPage = EditorGUILayout.IntSlider("Pair Display Amount", SerializableDictionaryWindow.WindowInstance.Displayer.DisplayAmountPerPage, SerializableDictionaryWindow.DisplayAmountRange.x, SerializableDictionaryWindow.DisplayAmountRange.y);
                         break;
                 }
 
@@ -266,78 +243,24 @@ namespace RealityProgrammer.UnityToolkit.Editors.Miscs {
             }
 
             if (!safeFlag) {
-                EditorGUI.BeginChangeCheck();
-
-                EditorGUILayout.PropertyField(_candidateKeyProperty, new GUIContent("New Key"));
-
-                if (EditorGUI.EndChangeCheck()) {
-                    _candidateKeyProperty.serializedObject.ApplyModifiedProperties();
-                    CheckContainsCandidate();
-                }
+                DoCandidateKeyField();
 
                 EditorGUI.BeginChangeCheck();
                 EditorGUILayout.PropertyField(_candidateValueProperty, new GUIContent("New Value"));
 
-                if (containsCandidate) {
-                    EditorGUILayout.HelpBox("Key already exists", MessageType.Error, true);
-
-                    GUI.enabled = false;
-                    EditorGUILayout.BeginHorizontal();
-                    GUILayout.Space(10);
-                    GUILayout.Button("Add");
-                    GUILayout.Space(10);
-                    EditorGUILayout.EndHorizontal();
-                    GUI.enabled = true;
-                } else {
-                    EditorGUILayout.BeginHorizontal();
-                    GUILayout.Space(10);
-
-                    if (GUILayout.Button("Add")) {
-                        InvokeAddCandidate();
-                    }
-                    GUILayout.Space(10);
-                    EditorGUILayout.EndHorizontal();
-                }
+                DoAddButton();
 
                 if (EditorGUI.EndChangeCheck()) {
                     _dictionaryProperty.serializedObject.ApplyModifiedProperties();
                 }
             } else {
-                EditorGUI.BeginChangeCheck();
-
-                EditorGUILayout.PropertyField(_candidateKeyProperty, new GUIContent("New Key"));
-
-                if (EditorGUI.EndChangeCheck()) {
-                    _candidateKeyProperty.serializedObject.ApplyModifiedProperties();
-                    CheckContainsCandidate();
-                }
+                DoCandidateKeyField();
 
                 if (_candidateKeyProperty.objectReferenceValue) {
                     EditorGUI.BeginChangeCheck();
                     EditorGUILayout.PropertyField(_candidateValueProperty, new GUIContent("New Value"));
 
-                    if (containsCandidate) {
-                        EditorGUILayout.HelpBox("Key already exists", MessageType.Error, true);
-
-                        GUI.enabled = false;
-                        EditorGUILayout.BeginHorizontal();
-                        GUILayout.Space(10);
-
-                        GUILayout.Button("Add");
-
-                        GUILayout.Space(10);
-                        EditorGUILayout.EndHorizontal();
-                        GUI.enabled = true;
-                    } else {
-                        EditorGUILayout.BeginHorizontal();
-                        GUILayout.Space(10);
-
-                        if (GUILayout.Button("Add")) {
-                            InvokeAddCandidate();
-                        }
-                        GUILayout.Space(10);
-                        EditorGUILayout.EndHorizontal();
-                    }
+                    DoAddButton();
 
                     if (EditorGUI.EndChangeCheck()) {
                         _dictionaryProperty.serializedObject.ApplyModifiedProperties();
@@ -346,19 +269,61 @@ namespace RealityProgrammer.UnityToolkit.Editors.Miscs {
             }
         }
 
-        private void InvokeAddCandidate() {
+        void DoAddButton() {
+            if (containsCandidate) {
+                EditorGUILayout.HelpBox("Key already exists", MessageType.Error, true);
+
+                GUI.enabled = false;
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(10);
+                GUILayout.Button("Add");
+                GUILayout.Space(10);
+                EditorGUILayout.EndHorizontal();
+                GUI.enabled = true;
+            } else {
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(10);
+
+                if (GUILayout.Button("Add")) {
+                    InvokeAddCandidate();
+                }
+                GUILayout.Space(10);
+                EditorGUILayout.EndHorizontal();
+            }
+        }
+
+        void DoCandidateKeyField() {
+            EditorGUI.BeginChangeCheck();
+
+            EditorGUILayout.PropertyField(_candidateKeyProperty, new GUIContent("New Key"));
+
+            if (EditorGUI.EndChangeCheck()) {
+                _candidateKeyProperty.serializedObject.ApplyModifiedProperties();
+                CheckContainsCandidate();
+            }
+        }
+
+        public void CloseWindow() {
+            //ClearCandidate();
+
+            //_dictionaryProperty.serializedObject.ApplyModifiedProperties();
+        }
+
+        internal void InvokeAddCandidate() {
             GUI.FocusControl(null);
             _cached.addCandidateMethod.Invoke(_cached.actualDictionaryInstance, null);
-            CheckContainsCandidate();
+            ClearCandidate();
 
-            _cached.clearCandidateMethod.Invoke(_cached.actualDictionaryInstance, null);
-
-            _dictionaryProperty.serializedObject.Update(); // Update the method to prevent the display throw NPE on retrieving indices
+            _dictionaryProperty.serializedObject.Update(); // Update the method to prevent the displayer throw NPE on retrieving indices
 
             onPairAdd?.Invoke();
         }
 
-        void CheckContainsCandidate() {
+        internal void ClearCandidate() {
+            _cached.clearCandidateMethod.Invoke(_cached.actualDictionaryInstance, null);
+        }
+
+        internal void CheckContainsCandidate() {
             containsCandidate = (bool)_cached.containsCandidateMethod.Invoke(_cached.actualDictionaryInstance, null);
         }
 
