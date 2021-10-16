@@ -1,4 +1,4 @@
-# RPUnity-Toolkit
+# RPUnity Toolkit
 A collection of scripts, editor scripts, utilities to improve Unity workflow and somewhat patch Unity's mistakes. Feel free to modify the contents for your usage.
 
 # Requirements
