@@ -21,3 +21,6 @@ You can install this by using one of the two following ways:
 1. No Light mode support for UI (yet?)  
 2. Some feature might not be stable and might have some bugs. If something odd occured, open an issue.  
 3. Might need some extra works to increase performance.  
+
+# Acknowledge
+This is one man project, so everything might not be perfect, but feedbacks, bug reports are highly welcome.
