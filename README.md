@@ -23,4 +23,4 @@ You can install this by using one of the two following ways:
 3. Might need some extra works to increase performance.  
 
 # Acknowledge
-This is one man project, so everything might not be perfect, but feedbacks, bug reports are highly welcome. Original version owned by RealityProgrammer, I'm owned by my mother, therefore this whole project owned by my ancestors. Clone, modification are allowed by the MIT license.
+This is one man project, so everything might not be perfect, but feedbacks, bug reports are highly welcome. Original version owned by RealityProgrammer, I'm owned by my mother, therefore this whole project is owned by my ancestors. Clone, modification are allowed by the MIT license.
