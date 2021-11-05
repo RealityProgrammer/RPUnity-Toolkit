@@ -14,6 +14,7 @@ namespace RealityProgrammer.UnityToolkit.Editors.Components {
 		SerializedProperty layerMaskProperty;
 
 		SerializedProperty checkEveryFrameProperty;
+		SerializedProperty tagComparisionsProperty, bufferSizeProperty;
 
 		SerializedProperty startCollisionCallbackProperty, endCollisionCallbackProperty;
 
@@ -32,6 +33,8 @@ namespace RealityProgrammer.UnityToolkit.Editors.Components {
 			checkEveryFrameProperty = serializedObject.FindProperty("<CheckEveryFrame>k__BackingField");
 			startCollisionCallbackProperty = serializedObject.FindProperty("<StartCollisionCallback>k__BackingField");
 			endCollisionCallbackProperty = serializedObject.FindProperty("<EndCollisionCallback>k__BackingField");
+			tagComparisionsProperty = serializedObject.FindProperty("<TagComparisions>k__BackingField");
+			bufferSizeProperty = serializedObject.FindProperty("_bufferSize");
 
 			component = target as Collider2DPhysicsChecker;
 
@@ -40,15 +43,24 @@ namespace RealityProgrammer.UnityToolkit.Editors.Components {
 		}
 
 		public override void OnInspectorGUI() {
-
 			EditorGUI.BeginChangeCheck();
 			serializedObject.Update();
 
 			EditorGUILayout.PropertyField(positionProperty);
 
 			if (positionProperty.objectReferenceValue != null) {
-				EditorGUILayout.PropertyField(checkTypeProperty);
 				EditorGUILayout.PropertyField(checkEveryFrameProperty);
+				EditorGUILayout.PropertyField(checkTypeProperty);
+
+				EditorGUI.BeginChangeCheck();
+				EditorGUILayout.PropertyField(bufferSizeProperty);
+				if (EditorGUI.EndChangeCheck()) {
+					bufferSizeProperty.intValue = Mathf.Clamp(bufferSizeProperty.intValue, 1, 32);
+
+					serializedObject.ApplyModifiedProperties();
+
+					((Collider2DPhysicsChecker)target).BufferSize = bufferSizeProperty.intValue;
+                }
 
 				EditorGUILayout.Space(6);
 				switch ((Collider2DPhysicsChecker.CheckType)checkTypeProperty.intValue) {
@@ -59,7 +71,6 @@ namespace RealityProgrammer.UnityToolkit.Editors.Components {
 						EditorGUILayout.PropertyField(sizeProperty);
 						EditorGUILayout.PropertyField(angleProperty);
 						EditorGUILayout.PropertyField(distanceProperty);
-						EditorGUILayout.PropertyField(layerMaskProperty);
 						break;
 
 					case Collider2DPhysicsChecker.CheckType.CapsuleCast:
@@ -69,7 +80,6 @@ namespace RealityProgrammer.UnityToolkit.Editors.Components {
 						EditorGUILayout.PropertyField(sizeProperty);
 						EditorGUILayout.PropertyField(angleProperty);
 						EditorGUILayout.PropertyField(distanceProperty);
-						EditorGUILayout.PropertyField(layerMaskProperty);
 						break;
 
 					case Collider2DPhysicsChecker.CheckType.CircleCast:
@@ -78,7 +88,6 @@ namespace RealityProgrammer.UnityToolkit.Editors.Components {
 						DoDirectionField();
 						EditorGUILayout.PropertyField(radiusProperty);
 						EditorGUILayout.PropertyField(distanceProperty);
-						EditorGUILayout.PropertyField(layerMaskProperty);
 						break;
 
 					case Collider2DPhysicsChecker.CheckType.LineCast:
@@ -86,7 +95,6 @@ namespace RealityProgrammer.UnityToolkit.Editors.Components {
 
 						DoDirectionField();
 						EditorGUILayout.PropertyField(distanceProperty);
-						EditorGUILayout.PropertyField(layerMaskProperty);
 						break;
 
 					case Collider2DPhysicsChecker.CheckType.OverlapArea:
@@ -102,7 +110,6 @@ namespace RealityProgrammer.UnityToolkit.Editors.Components {
 							component.Direction = delta.normalized;
 							component.Distance = delta.magnitude;
 						}
-						EditorGUILayout.PropertyField(layerMaskProperty);
 						break;
 
 					case Collider2DPhysicsChecker.CheckType.OverlapBox:
@@ -110,7 +117,6 @@ namespace RealityProgrammer.UnityToolkit.Editors.Components {
 
 						EditorGUILayout.PropertyField(sizeProperty);
 						EditorGUILayout.PropertyField(angleProperty);
-						EditorGUILayout.PropertyField(layerMaskProperty);
 						break;
 
 					case Collider2DPhysicsChecker.CheckType.OverlapCapsule:
@@ -118,20 +124,16 @@ namespace RealityProgrammer.UnityToolkit.Editors.Components {
 
 						EditorGUILayout.PropertyField(sizeProperty);
 						EditorGUILayout.PropertyField(angleProperty);
-						EditorGUILayout.PropertyField(layerMaskProperty);
 						break;
 
 					case Collider2DPhysicsChecker.CheckType.OverlapCircle:
 						EditorGUILayout.LabelField("Overlap Circle Properties", EditorStyles.boldLabel);
 
 						EditorGUILayout.PropertyField(radiusProperty);
-						EditorGUILayout.PropertyField(layerMaskProperty);
 						break;
 
 					case Collider2DPhysicsChecker.CheckType.OverlapPoint:
 						EditorGUILayout.LabelField("Overlap Point Properties", EditorStyles.boldLabel);
-
-						EditorGUILayout.PropertyField(layerMaskProperty);
 						break;
 
 					case Collider2DPhysicsChecker.CheckType.Raycast:
@@ -139,13 +141,15 @@ namespace RealityProgrammer.UnityToolkit.Editors.Components {
 
 						DoDirectionField();
 						EditorGUILayout.PropertyField(distanceProperty);
-						EditorGUILayout.PropertyField(layerMaskProperty);
 						break;
 
 					default:
 						EditorGUILayout.HelpBox("Undefined Check Type", MessageType.Error, true);
 						break;
 				}
+
+				EditorGUILayout.PropertyField(layerMaskProperty);
+				EditorGUILayout.PropertyField(tagComparisionsProperty);
 
 				startCollisionCallbackProperty.isExpanded = EditorGUILayout.Foldout(startCollisionCallbackProperty.isExpanded, "Callbacks");
 				if (startCollisionCallbackProperty.isExpanded) {
@@ -195,11 +199,6 @@ namespace RealityProgrammer.UnityToolkit.Editors.Components {
 			GUI.DrawTexture(rect, directionCircleTexture, ScaleMode.ScaleToFit);
 
 			var id = GUIUtility.GetControlID(FocusType.Passive);
-
-			// float angle = Mathf.Atan2(input.y, input.x) * Mathf.Rad2Deg;
-			// GUIUtility.RotateAroundPivot(-angle, rect.center);
-			// GUI.DrawTexture(rect, directionHandleTexture, ScaleMode.ScaleToFit);
-			// GUIUtility.RotateAroundPivot(angle, rect.center);
 
 			if (rect.Contains(evt.mousePosition)) {
 				switch (evt.GetTypeForControl(id)) {
