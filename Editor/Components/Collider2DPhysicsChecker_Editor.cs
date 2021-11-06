@@ -50,7 +50,6 @@ namespace RealityProgrammer.UnityToolkit.Editors.Components {
 
 			if (positionProperty.objectReferenceValue != null) {
 				EditorGUILayout.PropertyField(checkEveryFrameProperty);
-				EditorGUILayout.PropertyField(checkTypeProperty);
 
 				EditorGUI.BeginChangeCheck();
 				EditorGUILayout.PropertyField(bufferSizeProperty);
@@ -61,6 +60,8 @@ namespace RealityProgrammer.UnityToolkit.Editors.Components {
 
 					((Collider2DPhysicsChecker)target).BufferSize = bufferSizeProperty.intValue;
                 }
+
+				EditorGUILayout.PropertyField(checkTypeProperty);
 
 				EditorGUILayout.Space(6);
 				switch ((Collider2DPhysicsChecker.CheckType)checkTypeProperty.intValue) {
@@ -186,7 +187,7 @@ namespace RealityProgrammer.UnityToolkit.Editors.Components {
 			EditorGUI.BeginChangeCheck();
 
 			float deg = Mathf.Atan2(component.Direction.y, component.Direction.x) * Mathf.Rad2Deg;
-			float angle = EditorGUILayout.FloatField("Angle (Degree)", deg < 0 ? 360 + deg : deg) * Mathf.Deg2Rad;
+			float angle = EditorGUILayout.FloatField("In angle (Degree)", deg < 0 ? 360 + deg : deg) * Mathf.Deg2Rad;
 			if (EditorGUI.EndChangeCheck()) {
 				Undo.RecordObject(component, "Change Direction");
 				component.Direction = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
