@@ -23,7 +23,7 @@ You can install this by using one of the two following ways:
 3. Might need some extra works to increase performance.  
 
 # Questions and answers (that nobody ask)
-## 1. Q: I updated the package via Git URL, and my Intellisense cannot detect any class of it?
+## 1. Q: I updated the package via Git URL, and my Intellisense cannot detect any class of it/undefined references?
 Answer: It's best to regenerate the project files. In Unity Editor, go to Edits -> Preferences -> External Tools -> Click on the "Regenerate Project Files" button.
 
 # Acknowledge
