@@ -29,7 +29,7 @@ namespace RealityProgrammer.UnityToolkit.Core.Components {
 #else
                 value = Mathf.Clamp(value, 1, 32);
 
-                if (value != bufferSize) {
+                if (value != _bufferSize) {
                     _bufferSize = value;
 
                     Array.Resize(ref _raycastHitBuffer, value);
