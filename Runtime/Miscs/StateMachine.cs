@@ -9,7 +9,7 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
         protected State entryState;
         public State CurrentState { get; protected set; }
 
-        private MonoBehaviour AssociatedBehaviour;
+        public MonoBehaviour AssociatedBehaviour { get; protected set; }
 
         protected StateMachine(MonoBehaviour associated) {
             AssociatedBehaviour = associated;
