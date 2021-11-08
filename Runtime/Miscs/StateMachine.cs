@@ -9,7 +9,11 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
         protected State entryState;
         public State CurrentState { get; protected set; }
 
-        protected StateMachine() {
+        private MonoBehaviour AssociatedBehaviour;
+
+        protected StateMachine(MonoBehaviour associated) {
+            AssociatedBehaviour = associated;
+
             _stateDictionary = new Dictionary<Type, State>();
         }
 
@@ -35,10 +39,13 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
             }
         }
 
+        Coroutine durationCoroutine;
         public void ForceTransitionEvaluate() {
+            if (durationCoroutine != null) return;
+
             foreach (var pair in CurrentState.Transitions) {
-                if (pair.Value()) {
-                    ApplyCurrentState(pair.Key);
+                if (pair.Value.Condition()) {
+                    durationCoroutine = AssociatedBehaviour.StartCoroutine(ApplyCurrentState(pair.Key, pair.Value.TransitionDuration));
                 }
             }
         }
@@ -51,8 +58,10 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
             }
         }
 
-        protected void ApplyCurrentState(Type type) {
+        protected virtual IEnumerator ApplyCurrentState(Type type, float duration) {
             if (_stateDictionary.TryGetValue(type, out var state)) {
+                if (duration > 0) yield return new WaitForSeconds(duration);
+
                 var last = CurrentState;
                 if (last != null) {
                     last.Exit(this, state);
@@ -60,13 +69,15 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
 
                 CurrentState = state;
                 state.Start(this, last);
+
+                durationCoroutine = null;
             } else {
                 throw new ArgumentException("Trying to apply unregistered state.");
             }
         }
 
-        protected void ApplyCurrentState<T>() where T : State {
-            ApplyCurrentState(typeof(T));
+        protected IEnumerator ApplyCurrentState<T>(float duration) where T : State {
+            yield return ApplyCurrentState(typeof(T), duration);
         }
 
         /// <summary>
@@ -83,14 +94,19 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
         /// <typeparam name="T">The state they that already registered</typeparam>
         public void ApplyInitiateState<T>() where T : State {
             ApplyEntryState<T>();
-            ApplyCurrentState<T>();
+            AssociatedBehaviour.StartCoroutine(ApplyCurrentState<T>(0));
         }
 
         public void RegisterState<T>() where T : State, new() {
             var type = typeof(T);
 
             if (!_stateDictionary.ContainsKey(type)) {
-                _stateDictionary.Add(type, new T());
+                T stateInstance = new T();
+                _stateDictionary.Add(type, stateInstance);
+
+                if (stateInstance.ID == State.DefaultState) {
+                    ApplyInitiateState<T>();
+                }
             } else {
                 throw new ArgumentException("State of type " + type.FullName + " is already exists");
             }
@@ -108,12 +124,19 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
             }
         }
 
-        public void ApplyTransition<TFrom, TTo>(Func<bool> condition) where TFrom : State where TTo : State {
+        /// <summary>
+        /// Apply transition between 2 state type
+        /// </summary>
+        /// <typeparam name="TFrom">From state</typeparam>
+        /// <typeparam name="TTo">Destination state</typeparam>
+        /// <param name="condition">Condition</param>
+        /// <param name="transitionDuration">Transition duration once the condition are fulfilled</param>
+        public void ApplyTransition<TFrom, TTo>(Func<bool> condition, float transitionDuration = 0) where TFrom : State where TTo : State {
             var tf = typeof(TFrom);
             var tt = typeof(TTo);
 
             if (_stateDictionary.TryGetValue(tf, out var fromState) && _stateDictionary.ContainsKey(tt)) {
-                fromState.Transitions[tt] = condition;
+                fromState.Transitions[tt] = Transition.New(transitionDuration, condition);
             } else {
                 throw new ArgumentException($"Cannot apply transition state from {tf.FullName} to {tt.FullName} because either Start state or Destination state doesn't exists.");
             }
@@ -124,10 +147,10 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
         public const int InvalidState = -1;
         public const int DefaultState = 0;
 
-        public Dictionary<Type, Func<bool>> Transitions { get; protected set; }
+        public Dictionary<Type, Transition> Transitions { get; protected set; }
 
         public State() {
-            Transitions = new Dictionary<Type, Func<bool>>();
+            Transitions = new Dictionary<Type, Transition>();
         }
 
         /// <summary>
@@ -144,5 +167,20 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
         public virtual void Update(StateMachine machine) { }
         public virtual void FixedUpdate(StateMachine machine) { }
         public virtual void Exit(StateMachine machine, State next) { }
+    }
+
+    public class Transition {
+        public float TransitionDuration { get; private set; }
+        public Func<bool> Condition { get; private set; }
+
+        protected Transition() { }
+
+        public static Transition New(float duration, Func<bool> condition) {
+            Transition n = new Transition();
+            n.TransitionDuration = duration;
+            n.Condition = condition;
+
+            return n;
+        }
     }
 }
