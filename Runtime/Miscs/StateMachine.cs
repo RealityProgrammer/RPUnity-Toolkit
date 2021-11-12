@@ -11,6 +11,8 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
 
         public MonoBehaviour AssociatedBehaviour { get; protected set; }
 
+        internal static readonly Type StateType = typeof(State);
+
         protected StateMachine(MonoBehaviour associated) {
             AssociatedBehaviour = associated;
 
@@ -50,6 +52,17 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
             }
         }
 
+        public void ManualStateTransition(Type type, float duration = 0) {
+            if (!ValidateStateType(type)) return;
+            if (!_stateDictionary.ContainsKey(type)) _stateDictionary.Add(type, (State)Activator.CreateInstance(type));
+
+            durationCoroutine = AssociatedBehaviour.StartCoroutine(ApplyCurrentState(type, duration));
+        }
+
+        public void ManualStateTransition<T>(float duration = 0) where T : State, new() {
+            ManualStateTransition(typeof(T), duration);
+        }
+
         public virtual void FixedUpdate() {
             if (CurrentState != null) {
                 CurrentState.FixedUpdate(this);
@@ -83,9 +96,30 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
         /// <summary>
         /// Apply entry state without apply current state.
         /// </summary>
-        /// <typeparam name="T">The state type that already registered</typeparam>
+        /// <param name="type">The type represent the state that already been registered</param>
+        public void ApplyEntryState(Type type) {
+            if (!ValidateStateType(type)) return;
+
+            entryState = _stateDictionary[type];
+        }
+
+        /// <summary>
+        /// Apply entry state without apply current state.
+        /// </summary>
+        /// <typeparam name="T">The state type that already been registered</typeparam>
         public void ApplyEntryState<T>() where T : State {
-            entryState = _stateDictionary[typeof(T)];
+            ApplyEntryState(typeof(T));
+        }
+
+        /// <summary>
+        /// Apply entry state and current state at the same time.
+        /// </summary>
+        /// <param name="type">The state type that already been registered</param>
+        public void ApplyInitiateState(Type type) {
+            if (!ValidateStateType(type)) return;
+
+            ApplyEntryState(type);
+            AssociatedBehaviour.StartCoroutine(ApplyCurrentState(type, 0));
         }
 
         /// <summary>
@@ -93,34 +127,33 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
         /// </summary>
         /// <typeparam name="T">The state they that already registered</typeparam>
         public void ApplyInitiateState<T>() where T : State {
-            ApplyEntryState<T>();
-            AssociatedBehaviour.StartCoroutine(ApplyCurrentState<T>(0));
+            ApplyInitiateState(typeof(T));
         }
 
+        /// <summary>
+        /// Register state type
+        /// </summary>
+        /// <typeparam name="T">The state type need to be registered, auto assign entry if ID is default. <see cref="State.DefaultState"/></typeparam>
         public void RegisterState<T>() where T : State, new() {
-            var type = typeof(T);
+            RegisterState(typeof(T));
+        }
 
-            if (!_stateDictionary.ContainsKey(type)) {
-                T stateInstance = new T();
-                _stateDictionary.Add(type, stateInstance);
+        /// <summary>
+        /// Register state type
+        /// </summary>
+        /// <param name="stateType">The state type need to be registered, auto assign entry if ID is default. <see cref="State.DefaultState"/></param>
+        public void RegisterState(Type stateType) {
+            if (!ValidateStateType(stateType)) return;
+
+            if (!_stateDictionary.ContainsKey(stateType)) {
+                State stateInstance = (State)Activator.CreateInstance(stateType);
+                _stateDictionary.Add(stateType, stateInstance);
 
                 if (stateInstance.ID == State.DefaultState) {
-                    ApplyInitiateState<T>();
+                    ApplyInitiateState(stateType);
                 }
             } else {
-                throw new ArgumentException("State of type " + type.FullName + " is already exists");
-            }
-        }
-
-        public void RegisterState<T>(T state) where T : State {
-            if (state == null) return;
-
-            var type = state.GetType();
-
-            if (!_stateDictionary.ContainsKey(type)) {
-                _stateDictionary.Add(type, state);
-            } else {
-                throw new ArgumentException("State of type " + type.FullName + " is already exists");
+                throw new ArgumentException("State of type " + stateType.FullName + " is already exists");
             }
         }
 
@@ -140,6 +173,24 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
             } else {
                 throw new ArgumentException($"Cannot apply transition state from {tf.FullName} to {tt.FullName} because either Start state or Destination state doesn't exists.");
             }
+        }
+
+        protected bool ValidateStateType(Type type) {
+            if (type == null) {
+                Debug.LogError("The input parameter state type cannot be null.");
+            }
+
+            if (!type.IsSubclassOf(StateType)) {
+                Debug.LogError("The input parameter state type is not a state.");
+                return false;
+            }
+
+            if (type.IsAbstract) {
+                Debug.LogError("The input parameter state type is abstract, thus cannot be used in the context.");
+                return false;
+            }
+
+            return true;
         }
     }
 
