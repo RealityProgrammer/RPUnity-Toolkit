@@ -1,11 +1,14 @@
 using System;
 using System.Collections;
+using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace RealityProgrammer.UnityToolkit.Core.Miscs {
     public class StateMachine {
         protected Dictionary<Type, State> _stateDictionary;
+        public ReadOnlyDictionary<Type, State> StateDictionary => new ReadOnlyDictionary<Type, State>(_stateDictionary);
+
         protected State entryState;
         public State CurrentState { get; protected set; }
 
@@ -34,12 +37,16 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
             }
         }
 
+        protected void EnsureStartCall() {
+            if (!calledStart) {
+                calledStart = true;
+                CurrentState.Start(this, lastState);
+            }
+        }
+
         public virtual void Update() {
             if (CurrentState != null) {
-				if (!calledStart) {
-					calledStart = true;
-					CurrentState.Start(this, lastState);
-				}
+                EnsureStartCall();
 				
                 CurrentState.Update(this);
 
@@ -72,6 +79,8 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
 
         public virtual void FixedUpdate() {
             if (CurrentState != null) {
+                EnsureStartCall();
+
                 CurrentState.FixedUpdate(this);
             } else {
                 Debug.LogError("Trying to FixedUpdate a state machine with invalid/null state");
@@ -141,16 +150,17 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
         /// Register state type
         /// </summary>
         /// <typeparam name="T">The state type need to be registered, auto assign entry if ID is default. <see cref="State.DefaultState"/></typeparam>
-        public void RegisterState<T>() where T : State, new() {
-            RegisterState(typeof(T));
+        public bool RegisterState<T>() where T : State, new() {
+            return RegisterState(typeof(T));
         }
 
         /// <summary>
-        /// Register state type
+        /// Register state type.
         /// </summary>
-        /// <param name="stateType">The state type need to be registered, auto assign entry if ID is default. <see cref="State.DefaultState"/></param>
-        public void RegisterState(Type stateType) {
-            if (!ValidateStateType(stateType)) return;
+        /// <param name="stateType">The state type need to be registered, auto assign entry if ID is default (see <see cref="State.DefaultState"/>). Warning if state is already registered (Editor Only).</param>
+        /// <returns>Whether the register operation success.</returns>
+        public bool RegisterState(Type stateType) {
+            if (!ValidateStateType(stateType)) return false;
 
             if (!_stateDictionary.ContainsKey(stateType)) {
                 State stateInstance = (State)Activator.CreateInstance(stateType);
@@ -159,13 +169,55 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
                 if (stateInstance.ID == State.DefaultState) {
                     ApplyInitiateState(stateType);
                 }
-            } else {
-                throw new ArgumentException("State of type " + stateType.FullName + " is already exists");
+
+                stateInstance.OnRegistered(this);
+                return true;
             }
+
+#if UNITY_EDITOR
+            Debug.LogWarning("State of type " + stateType.FullName + " is already exists");
+#endif
+            return false;
         }
 
         /// <summary>
-        /// Apply transition between 2 state type
+        /// Unregister state type.
+        /// </summary>
+        /// <typeparam name="T">Type of state need to be registered, warning if state doesn't exists (Editor Only).</typeparam>
+        public bool UnregisterState<T, TFallback>() where T : State where TFallback : State {
+            return UnregisterState(typeof(T), typeof(TFallback));
+        }
+
+        /// <summary>
+        /// Unregister state type.
+        /// </summary>
+        /// <param name="stateType">The state type need to be unregistered, warning if state doesn't exists (Editor Only).</param>
+        /// <returns>Whether the unregister operation success</returns>
+        public bool UnregisterState(Type stateType, Type fallbackState) {
+            if (!ValidateStateType(stateType)) return false;
+
+            if (_stateDictionary.ContainsKey(stateType)) {
+                _stateDictionary.Remove(stateType);
+
+                if (CurrentState != null && CurrentState.GetType() == stateType) {
+                    ManualStateTransition(fallbackState);
+                }
+
+                State stateInstance = (State)Activator.CreateInstance(stateType);
+                _stateDictionary.Add(stateType, stateInstance);
+                stateInstance.OnUnregistered(this);
+
+                return true;
+            }
+
+#if UNITY_EDITOR
+            Debug.LogWarning("State of type " + stateType.FullName + " is already exists");
+#endif
+            return false;
+        }
+
+        /// <summary>
+        /// Apply transition between 2 state type.
         /// </summary>
         /// <typeparam name="TFrom">From state</typeparam>
         /// <typeparam name="TTo">Destination state</typeparam>
@@ -217,6 +269,9 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
         /// Negative state are preserved for internal use only
         /// </summary>
         public abstract int ID { get; }
+
+        public virtual void OnRegistered(StateMachine machine) { }
+        public virtual void OnUnregistered(StateMachine machine) { }
 
         public virtual void OnEnable(StateMachine machine) { }
         public virtual void OnDisable(StateMachine machine) { }
