@@ -86,6 +86,16 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
                 Debug.LogError("Trying to FixedUpdate a state machine with invalid/null state");
             }
         }
+		
+		public virtual void LateUpdate() {
+            if (CurrentState != null) {
+                EnsureStartCall();
+
+                CurrentState.LateUpdate(this);
+            } else {
+                Debug.LogError("Trying to LateUpdate a state machine with invalid/null state");
+            }
+        }
 
         protected virtual IEnumerator ApplyCurrentState(Type type, float duration) {
             if (_stateDictionary.TryGetValue(type, out var state)) {
@@ -97,6 +107,7 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
                 }
 
                 CurrentState = state;
+				CurrentState.Awake(this, lastState);
 				
 				calledStart = false;
                 durationCoroutine = null;
@@ -245,7 +256,7 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
             }
 
             if (type.IsAbstract) {
-                Debug.LogError("The input parameter state type is abstract, thus cannot be used in the context.");
+                Debug.LogError("The input parameter state type is abstract, thus cannot be used.");
                 return false;
             }
 
@@ -276,9 +287,11 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
         public virtual void OnEnable(StateMachine machine) { }
         public virtual void OnDisable(StateMachine machine) { }
 
+		public virtual void Awake(StateMachine machine, State last) { }
         public virtual void Start(StateMachine machine, State last) { }
         public virtual void Update(StateMachine machine) { }
         public virtual void FixedUpdate(StateMachine machine) { }
+		public virtual void LateUpdate(StateMachine machine) { }
         public virtual void Exit(StateMachine machine, State next) { }
     }
 
