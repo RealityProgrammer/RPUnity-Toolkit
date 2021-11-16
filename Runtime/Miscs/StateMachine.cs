@@ -54,7 +54,6 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
 
         public void ManualStateTransition(Type type, float duration = 0) {
             if (!ValidateStateType(type)) return;
-            if (!_stateDictionary.ContainsKey(type)) _stateDictionary.Add(type, (State)Activator.CreateInstance(type));
 
             durationCoroutine = AssociatedBehaviour.StartCoroutine(ApplyCurrentState(type, duration));
         }
