@@ -12,6 +12,9 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
         public MonoBehaviour AssociatedBehaviour { get; protected set; }
 
         internal static readonly Type StateType = typeof(State);
+		
+		State lastState = null;
+		bool calledStart = false;
 
         protected StateMachine(MonoBehaviour associated) {
             AssociatedBehaviour = associated;
@@ -33,6 +36,11 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
 
         public virtual void Update() {
             if (CurrentState != null) {
+				if (!calledStart) {
+					calledStart = true;
+					CurrentState.Start(this, lastState);
+				}
+				
                 CurrentState.Update(this);
 
                 ForceTransitionEvaluate();
@@ -74,14 +82,14 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
             if (_stateDictionary.TryGetValue(type, out var state)) {
                 if (duration > 0) yield return new WaitForSeconds(duration);
 
-                var last = CurrentState;
-                if (last != null) {
-                    last.Exit(this, state);
+                lastState = CurrentState;
+                if (lastState != null) {
+                    lastState.Exit(this, state);
                 }
 
                 CurrentState = state;
-                state.Start(this, last);
-
+				
+				calledStart = false;
                 durationCoroutine = null;
             } else {
                 throw new ArgumentException("Trying to apply unregistered state.");
