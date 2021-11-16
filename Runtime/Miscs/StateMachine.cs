@@ -177,11 +177,12 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
                 State stateInstance = (State)Activator.CreateInstance(stateType);
                 _stateDictionary.Add(stateType, stateInstance);
 
+				stateInstance.OnRegistered(this);
+
                 if (stateInstance.ID == State.DefaultState) {
                     ApplyInitiateState(stateType);
                 }
 
-                stateInstance.OnRegistered(this);
                 return true;
             }
 
@@ -208,17 +209,17 @@ namespace RealityProgrammer.UnityToolkit.Core.Miscs {
             if (!ValidateStateType(stateType)) return false;
 
             if (_stateDictionary.ContainsKey(stateType)) {
-                _stateDictionary.Remove(stateType);
+				var old = _stateDictionary[stateType];
+				
+				if (CurrentState != null && CurrentState.GetType() == stateType) {
+					ManualStateTransition(fallbackState);
+				}
+			
+				_stateDictionary.Remove(stateType);
 
-                if (CurrentState != null && CurrentState.GetType() == stateType) {
-                    ManualStateTransition(fallbackState);
-                }
-
-                State stateInstance = (State)Activator.CreateInstance(stateType);
-                _stateDictionary.Add(stateType, stateInstance);
-                stateInstance.OnUnregistered(this);
-
-                return true;
+				old.OnUnregistered(this);
+				
+				return true;
             }
 
 #if UNITY_EDITOR
