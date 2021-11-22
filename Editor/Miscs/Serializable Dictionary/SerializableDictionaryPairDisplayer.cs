@@ -100,6 +100,10 @@ namespace RealityProgrammer.UnityToolkit.Editors.Windows.SerializableDictionary 
         private object removeKey; // Prevent NRE
 
         public void DrawDisplayLayout() {
+            if (_cached.keyLookupArray.Count != Count) {
+                _cached.RefreshIndexLookupList();
+            }
+
             int total = _cached.keyLookupArray.Count;
             int pageCount = total / DisplayAmountPerPage + Math.Sign(total % DisplayAmountPerPage / (float)DisplayAmountPerPage);
 

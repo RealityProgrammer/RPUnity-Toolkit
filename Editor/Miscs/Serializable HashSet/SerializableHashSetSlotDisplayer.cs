@@ -97,6 +97,10 @@ namespace RealityProgrammer.UnityToolkit.Editors.Windows.SerializableHashSet {
         }
 
         public void DrawDisplayLayout() {
+            if (_cached.valueLookupList.Count != Count) {
+                _cached.RefreshIndexLookupList();
+            }
+
             int pageCount = Count / DisplayAmountPerPage + Math.Sign(Count % DisplayAmountPerPage / (float)DisplayAmountPerPage);
 
             if (pageCount != 0) {
@@ -217,6 +221,6 @@ namespace RealityProgrammer.UnityToolkit.Editors.Windows.SerializableHashSet {
             EditorGUILayout.Space(4);
         }
 
-        public int Count => _cached.valueLookupList.Count;
+        public int Count => _countProperty.intValue;
     }
 }
